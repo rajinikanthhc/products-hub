@@ -1,7 +1,24 @@
 /* =========================================================
-   PERSONAL CRM
-   BACKEND - V1.2
+   PRODUCTS HUB
+   Code.gs
+   Backend / Google Sheets connection
 ========================================================= */
+
+
+/* =========================================================
+   CONFIGURATION
+========================================================= */
+
+const SHEET_NAMES = [
+  'Products',
+  'Applications',
+  'Industries',
+  'Competitors',
+  'Cable Knowledge',
+  'Learning',
+  'Career Growth',
+  'Documents'
+];
 
 
 /* =========================================================
@@ -13,7 +30,7 @@ function doGet() {
   return HtmlService
     .createTemplateFromFile('Index')
     .evaluate()
-    .setTitle('Personal CRM')
+    .setTitle('Products Hub')
     .setXFrameOptionsMode(
       HtmlService.XFrameOptionsMode.ALLOWALL
     );
@@ -22,7 +39,7 @@ function doGet() {
 
 
 /* =========================================================
-   INCLUDE HTML FILE
+   INCLUDE HTML FILES
 ========================================================= */
 
 function include(filename) {
@@ -35,7 +52,7 @@ function include(filename) {
 
 
 /* =========================================================
-   SPREADSHEET
+   GET SPREADSHEET
 ========================================================= */
 
 function getSpreadsheet() {
@@ -46,69 +63,66 @@ function getSpreadsheet() {
 
 
 /* =========================================================
-   SHEETS
+   CHECK REQUIRED SHEETS
 ========================================================= */
 
-function getCompaniesSheet() {
+function checkSheets() {
 
-  const sheet =
-    getSpreadsheet()
-      .getSheetByName('Companies Sheet');
+  const ss = getSpreadsheet();
 
-  if (!sheet) {
-    throw new Error('Companies Sheet not found.');
-  }
+  const result = {};
 
-  return sheet;
+  SHEET_NAMES.forEach(function(sheetName) {
 
-}
+    const sheet = ss.getSheetByName(sheetName);
 
+    result[sheetName] = !!sheet;
 
-function getPeopleSheet() {
+  });
 
-  const sheet =
-    getSpreadsheet()
-      .getSheetByName('People Sheet');
-
-  if (!sheet) {
-    throw new Error('People Sheet not found.');
-  }
-
-  return sheet;
-
-}
-
-
-function getSettingsSheet() {
-
-  const sheet =
-    getSpreadsheet()
-      .getSheetByName('Settings');
-
-  if (!sheet) {
-    throw new Error('Settings sheet not found.');
-  }
-
-  return sheet;
+  return result;
 
 }
 
 
 /* =========================================================
-   GENERIC SHEET DATA
+   GET SHEET DATA
 ========================================================= */
 
-function sheetToObjects(sheet) {
+function getSheetData(sheetName) {
 
-  const values =
-    sheet.getDataRange().getValues();
+  const ss = getSpreadsheet();
 
-  if (!values.length) {
+  const sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    throw new Error(
+      'Sheet not found: ' + sheetName
+    );
+  }
+
+
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+
+
+  if (lastRow < 1 || lastColumn < 1) {
     return [];
   }
 
-  const headers =
-    values[0];
+
+  const values = sheet
+    .getRange(1, 1, lastRow, lastColumn)
+    .getValues();
+
+
+  if (values.length < 2) {
+    return [];
+  }
+
+
+  const headers = values[0];
+
 
   return values
     .slice(1)
@@ -125,20 +139,19 @@ function sheetToObjects(sheet) {
     })
     .map(function(row) {
 
-      const object = {};
+      const item = {};
 
       headers.forEach(function(header, index) {
 
-        if (header) {
+        if (header !== '') {
 
-          object[String(header)] =
-            row[index];
+          item[header] = row[index];
 
         }
 
       });
 
-      return object;
+      return item;
 
     });
 
@@ -146,119 +159,35 @@ function sheetToObjects(sheet) {
 
 
 /* =========================================================
-   GET HEADERS
+   DASHBOARD COUNTS
 ========================================================= */
 
-function getHeaders(sheet) {
+function getDashboardData() {
 
-  return sheet
-    .getRange(
-      1,
-      1,
-      1,
-      sheet.getLastColumn()
-    )
-    .getValues()[0];
-
-}
-
-
-/* =========================================================
-   COMPANIES
-========================================================= */
-
-function getCompanies() {
-
-  return sheetToObjects(
-    getCompaniesSheet()
-  );
-
-}
-
-
-/* =========================================================
-   PEOPLE
-========================================================= */
-
-function getPeople() {
-
-  const people =
-    sheetToObjects(
-      getPeopleSheet()
-    );
-
-  return people.map(function(person) {
-
-    const photo =
-      String(
-        person['Photo'] || ''
-      ).trim();
-
-    person.photoUrl =
-      photo
-        ? getVisitingCardUrl(photo)
-        : '';
-
-    return person;
-
-  });
-
-}
-
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
-function getSettings() {
-
-  const sheet =
-    getSettingsSheet();
-
-  const values =
-    sheet.getDataRange().getValues();
-
-  if (!values.length) {
-    return {};
-  }
-
-  const headers =
-    values[0];
+  const ss = getSpreadsheet();
 
   const result = {};
 
-  headers.forEach(function(header, columnIndex) {
+  SHEET_NAMES.forEach(function(sheetName) {
 
-    if (!header) {
+    const sheet = ss.getSheetByName(sheetName);
+
+    if (!sheet) {
+
+      result[sheetName] = 0;
+
       return;
-    }
-
-    result[String(header)] = [];
-
-    for (
-      let row = 1;
-      row < values.length;
-      row++
-    ) {
-
-      const value =
-        values[row][columnIndex];
-
-      if (
-        value !== '' &&
-        value !== null &&
-        value !== undefined
-      ) {
-
-        result[String(header)].push(
-          String(value)
-        );
-
-      }
 
     }
+
+
+    const lastRow = sheet.getLastRow();
+
+    result[sheetName] =
+      Math.max(0, lastRow - 1);
 
   });
+
 
   return result;
 
@@ -266,1265 +195,105 @@ function getSettings() {
 
 
 /* =========================================================
-   COMPLETE CRM DATA
+   PRODUCTS
 ========================================================= */
 
-function getCRMData() {
+function getProducts() {
+
+  return getSheetData('Products');
+
+}
+
+
+/* =========================================================
+   APPLICATIONS
+========================================================= */
+
+function getApplications() {
+
+  return getSheetData('Applications');
+
+}
+
+
+/* =========================================================
+   INDUSTRIES
+========================================================= */
+
+function getIndustries() {
+
+  return getSheetData('Industries');
+
+}
+
+
+/* =========================================================
+   COMPETITORS
+========================================================= */
+
+function getCompetitors() {
+
+  return getSheetData('Competitors');
+
+}
+
+
+/* =========================================================
+   CABLE KNOWLEDGE
+========================================================= */
+
+function getCableKnowledge() {
+
+  return getSheetData('Cable Knowledge');
+
+}
+
+
+/* =========================================================
+   LEARNING
+========================================================= */
+
+function getLearning() {
+
+  return getSheetData('Learning');
+
+}
+
+
+/* =========================================================
+   CAREER GROWTH
+========================================================= */
+
+function getCareerGrowth() {
+
+  return getSheetData('Career Growth');
+
+}
+
+
+/* =========================================================
+   DOCUMENTS
+========================================================= */
+
+function getDocuments() {
+
+  return getSheetData('Documents');
+
+}
+
+
+/* =========================================================
+   TEST CONNECTION
+========================================================= */
+
+function testConnection() {
+
+  const ss = getSpreadsheet();
 
   return {
-
-    companies:
-      getCompanies(),
-
-    people:
-      getPeople(),
-
-    settings:
-      getSettings()
-
-  };
-
-}
-
-
-/* =========================================================
-   MASTER FIELDS
-========================================================= */
-
-const MASTER_FIELDS = [
-
-  'Company Type',
-  'Industry',
-  'Area',
-  'City',
-  'State',
-  'Designation'
-
-];
-
-
-/* =========================================================
-   GET MASTER VALUES
-========================================================= */
-
-function getMasterValues(field) {
-
-  if (
-    MASTER_FIELDS.indexOf(field) === -1
-  ) {
-
-    throw new Error(
-      'Invalid master field.'
-    );
-
-  }
-
-  const sheet =
-    getSettingsSheet();
-
-  const headers =
-    getHeaders(sheet);
-
-  const columnIndex =
-    headers.indexOf(field);
-
-  if (columnIndex === -1) {
-
-    throw new Error(
-      field +
-      ' column not found in Settings sheet.'
-    );
-
-  }
-
-  const lastRow =
-    sheet.getLastRow();
-
-  if (lastRow < 2) {
-    return [];
-  }
-
-  const values =
-    sheet
-      .getRange(
-        2,
-        columnIndex + 1,
-        lastRow - 1,
-        1
-      )
-      .getValues();
-
-  return values
-    .map(function(row) {
-
-      return String(
-        row[0] || ''
-      ).trim();
-
-    })
-    .filter(function(value) {
-
-      return value !== '';
-
-    });
-
-}
-
-
-/* =========================================================
-   ADD MASTER VALUE
-========================================================= */
-
-function addMasterValue(
-  field,
-  value
-) {
-
-  if (
-    MASTER_FIELDS.indexOf(field) === -1
-  ) {
-
-    throw new Error(
-      'Invalid master field.'
-    );
-
-  }
-
-  const newValue =
-    String(
-      value || ''
-    ).trim();
-
-  if (!newValue) {
-
-    throw new Error(
-      'Please enter a value.'
-    );
-
-  }
-
-  const existing =
-    getMasterValues(field);
-
-  const duplicate =
-    existing.some(function(item) {
-
-      return (
-        item.toLowerCase() ===
-        newValue.toLowerCase()
-      );
-
-    });
-
-  if (duplicate) {
-
-    throw new Error(
-      '"' +
-      newValue +
-      '" already exists.'
-    );
-
-  }
-
-  const sheet =
-    getSettingsSheet();
-
-  const headers =
-    getHeaders(sheet);
-
-  const columnIndex =
-    headers.indexOf(field);
-
-  if (columnIndex === -1) {
-
-    throw new Error(
-      field +
-      ' column not found.'
-    );
-
-  }
-
-
-  /*
-     Find first empty cell.
-  */
-
-  const lastRow =
-    Math.max(
-      sheet.getLastRow(),
-      2
-    );
-
-  const values =
-    sheet
-      .getRange(
-        2,
-        columnIndex + 1,
-        lastRow - 1,
-        1
-      )
-      .getValues();
-
-  let targetRow =
-    -1;
-
-  for (
-    let i = 0;
-    i < values.length;
-    i++
-  ) {
-
-    if (
-      String(
-        values[i][0] || ''
-      ).trim() === ''
-    ) {
-
-      targetRow =
-        i + 2;
-
-      break;
-
-    }
-
-  }
-
-
-  if (targetRow === -1) {
-
-    targetRow =
-      sheet.getLastRow() + 1;
-
-  }
-
-
-  sheet
-    .getRange(
-      targetRow,
-      columnIndex + 1
-    )
-    .setValue(
-      newValue
-    );
-
-
-  return {
-    success: true
-  };
-
-}
-
-
-/* =========================================================
-   UPDATE MASTER VALUE
-========================================================= */
-
-function updateMasterValue(
-  field,
-  oldValue,
-  newValue
-) {
-
-  if (
-    MASTER_FIELDS.indexOf(field) === -1
-  ) {
-
-    throw new Error(
-      'Invalid master field.'
-    );
-
-  }
-
-  const oldText =
-    String(
-      oldValue || ''
-    ).trim();
-
-  const newText =
-    String(
-      newValue || ''
-    ).trim();
-
-  if (!newText) {
-
-    throw new Error(
-      'Please enter a value.'
-    );
-
-  }
-
-  const existing =
-    getMasterValues(field);
-
-  const duplicate =
-    existing.some(function(item) {
-
-      return (
-        item.toLowerCase() ===
-        newText.toLowerCase() &&
-        item.toLowerCase() !==
-        oldText.toLowerCase()
-      );
-
-    });
-
-  if (duplicate) {
-
-    throw new Error(
-      '"' +
-      newText +
-      '" already exists.'
-    );
-
-  }
-
-  const sheet =
-    getSettingsSheet();
-
-  const headers =
-    getHeaders(sheet);
-
-  const columnIndex =
-    headers.indexOf(field);
-
-  const lastRow =
-    sheet.getLastRow();
-
-  if (lastRow < 2) {
-
-    throw new Error(
-      'Value not found.'
-    );
-
-  }
-
-  const values =
-    sheet
-      .getRange(
-        2,
-        columnIndex + 1,
-        lastRow - 1,
-        1
-      )
-      .getValues();
-
-
-  for (
-    let i = 0;
-    i < values.length;
-    i++
-  ) {
-
-    const current =
-      String(
-        values[i][0] || ''
-      ).trim();
-
-    if (
-      current.toLowerCase() ===
-      oldText.toLowerCase()
-    ) {
-
-      sheet
-        .getRange(
-          i + 2,
-          columnIndex + 1
-        )
-        .setValue(
-          newText
-        );
-
-      return {
-        success: true
-      };
-
-    }
-
-  }
-
-
-  throw new Error(
-    '"' +
-    oldText +
-    '" not found.'
-  );
-
-}
-
-
-/* =========================================================
-   DELETE MASTER VALUE
-========================================================= */
-
-function deleteMasterValue(
-  field,
-  value
-) {
-
-  if (
-    MASTER_FIELDS.indexOf(field) === -1
-  ) {
-
-    throw new Error(
-      'Invalid master field.'
-    );
-
-  }
-
-  const text =
-    String(
-      value || ''
-    ).trim();
-
-  const sheet =
-    getSettingsSheet();
-
-  const headers =
-    getHeaders(sheet);
-
-  const columnIndex =
-    headers.indexOf(field);
-
-  const lastRow =
-    sheet.getLastRow();
-
-  if (lastRow < 2) {
-
-    throw new Error(
-      'Value not found.'
-    );
-
-  }
-
-  const values =
-    sheet
-      .getRange(
-        2,
-        columnIndex + 1,
-        lastRow - 1,
-        1
-      )
-      .getValues();
-
-
-  for (
-    let i = 0;
-    i < values.length;
-    i++
-  ) {
-
-    const current =
-      String(
-        values[i][0] || ''
-      ).trim();
-
-    if (
-      current.toLowerCase() ===
-      text.toLowerCase()
-    ) {
-
-      /*
-         Clear only the setting cell.
-         Never delete the complete row.
-      */
-
-      sheet
-        .getRange(
-          i + 2,
-          columnIndex + 1
-        )
-        .clearContent();
-
-      return {
-        success: true
-      };
-
-    }
-
-  }
-
-
-  throw new Error(
-    '"' +
-    text +
-    '" not found.'
-  );
-
-}
-
-
-/* =========================================================
-   LOWEST AVAILABLE COMPANY ID
-========================================================= */
-
-function getNextCompanyId() {
-
-  const companies =
-    getCompanies();
-
-  const used = {};
-
-  companies.forEach(function(company) {
-
-    const id =
-      String(
-        company['ID'] || ''
-      ).trim();
-
-    const match =
-      id.match(/^C(\d+)$/i);
-
-    if (match) {
-
-      used[
-        Number(match[1])
-      ] = true;
-
-    }
-
-  });
-
-  let number = 1;
-
-  while (used[number]) {
-    number++;
-  }
-
-  return (
-    'C' +
-    String(number).padStart(3, '0')
-  );
-
-}
-
-
-/* =========================================================
-   LOWEST AVAILABLE PERSON ID
-========================================================= */
-
-function getNextPersonId() {
-
-  const people =
-    getPeople();
-
-  const used = {};
-
-  people.forEach(function(person) {
-
-    const id =
-      String(
-        person['ID'] || ''
-      ).trim();
-
-    const match =
-      id.match(/^P(\d+)$/i);
-
-    if (match) {
-
-      used[
-        Number(match[1])
-      ] = true;
-
-    }
-
-  });
-
-  let number = 1;
-
-  while (used[number]) {
-    number++;
-  }
-
-  return (
-    'P' +
-    String(number).padStart(3, '0')
-  );
-
-}
-
-
-/* =========================================================
-   FIND ROW BY ID
-========================================================= */
-
-function findRowById(
-  sheet,
-  id
-) {
-
-  const values =
-    sheet.getDataRange().getValues();
-
-  if (values.length < 2) {
-    return -1;
-  }
-
-  const headers =
-    values[0];
-
-  const idIndex =
-    headers.indexOf('ID');
-
-  if (idIndex === -1) {
-
-    throw new Error(
-      'ID column not found in ' +
-      sheet.getName()
-    );
-
-  }
-
-  for (
-    let i = 1;
-    i < values.length;
-    i++
-  ) {
-
-    if (
-      String(values[i][idIndex]) ===
-      String(id)
-    ) {
-
-      return i + 1;
-
-    }
-
-  }
-
-  return -1;
-
-}
-
-
-/* =========================================================
-   ADD COMPANY
-========================================================= */
-
-function addCompany(company) {
-
-  const sheet =
-    getCompaniesSheet();
-
-  const headers =
-    getHeaders(sheet);
-
-  const companyId =
-    getNextCompanyId();
-
-  const row =
-    headers.map(function(header) {
-
-      if (header === 'ID') {
-        return companyId;
-      }
-
-      if (header === 'Favorite') {
-
-        return (
-          company['Favorite'] ||
-          'No'
-        );
-
-      }
-
-      return (
-        company[header] ||
-        ''
-      );
-
-    });
-
-  sheet.appendRow(row);
-
-  return {
-    success: true,
-    id: companyId
-  };
-
-}
-
-
-/* =========================================================
-   UPDATE COMPANY
-========================================================= */
-
-function updateCompany(company) {
-
-  const sheet =
-    getCompaniesSheet();
-
-  const rowNumber =
-    findRowById(
-      sheet,
-      company['ID']
-    );
-
-  if (rowNumber === -1) {
-
-    throw new Error(
-      'Company not found.'
-    );
-
-  }
-
-  const headers =
-    getHeaders(sheet);
-
-  const row =
-    headers.map(function(header) {
-
-      if (header === 'ID') {
-        return company['ID'];
-      }
-
-      if (header === 'Favorite') {
-
-        return (
-          company['Favorite'] ||
-          'No'
-        );
-
-      }
-
-      return (
-        company[header] ||
-        ''
-      );
-
-    });
-
-  sheet
-    .getRange(
-      rowNumber,
-      1,
-      1,
-      headers.length
-    )
-    .setValues([row]);
-
-  return {
-    success: true
-  };
-
-}
-
-
-/* =========================================================
-   DELETE COMPANY
-========================================================= */
-
-function deleteCompany(companyId) {
-
-  const companySheet =
-    getCompaniesSheet();
-
-  const peopleSheet =
-    getPeopleSheet();
-
-  const people =
-    getPeople();
-
-  const companyPeople =
-    people.filter(function(person) {
-
-      return String(
-        person['Company ID']
-      ) === String(
-        companyId
-      );
-
-    });
-
-
-  companyPeople.forEach(function(person) {
-
-    const photo =
-      String(
-        person['Photo'] || ''
-      ).trim();
-
-    if (photo) {
-
-      try {
-
-        deleteVisitingCard(
-          photo
-        );
-
-      } catch (error) {
-
-        console.log(
-          'Photo deletion failed: ' +
-          error.message
-        );
-
-      }
-
-    }
-
-  });
-
-
-  const peopleRows = [];
-
-  companyPeople.forEach(function(person) {
-
-    const row =
-      findRowById(
-        peopleSheet,
-        person['ID']
-      );
-
-    if (row !== -1) {
-      peopleRows.push(row);
-    }
-
-  });
-
-
-  peopleRows
-    .sort(function(a, b) {
-      return b - a;
-    })
-    .forEach(function(row) {
-
-      peopleSheet.deleteRow(row);
-
-    });
-
-
-  const companyRow =
-    findRowById(
-      companySheet,
-      companyId
-    );
-
-  if (companyRow === -1) {
-
-    throw new Error(
-      'Company not found.'
-    );
-
-  }
-
-  companySheet.deleteRow(
-    companyRow
-  );
-
-
-  return {
-    success: true
-  };
-
-}
-
-
-/* =========================================================
-   TOGGLE FAVORITE
-========================================================= */
-
-function toggleFavorite(companyId) {
-
-  const sheet =
-    getCompaniesSheet();
-
-  const rowNumber =
-    findRowById(
-      sheet,
-      companyId
-    );
-
-  if (rowNumber === -1) {
-
-    throw new Error(
-      'Company not found.'
-    );
-
-  }
-
-  const headers =
-    getHeaders(sheet);
-
-  const favoriteIndex =
-    headers.indexOf(
-      'Favorite'
-    );
-
-  if (favoriteIndex === -1) {
-
-    throw new Error(
-      'Favorite column not found.'
-    );
-
-  }
-
-  const cell =
-    sheet.getRange(
-      rowNumber,
-      favoriteIndex + 1
-    );
-
-  const current =
-    String(
-      cell.getValue() || ''
-    )
-      .trim()
-      .toLowerCase();
-
-  const newValue =
-    current === 'yes'
-      ? 'No'
-      : 'Yes';
-
-  cell.setValue(
-    newValue
-  );
-
-  return {
-    success: true,
-    favorite: newValue
-  };
-
-}
-
-
-/* =========================================================
-   ADD PERSON
-========================================================= */
-
-function addPerson(
-  companyId,
-  person,
-  imageData
-) {
-
-  const company =
-    getCompanies()
-      .find(function(item) {
-
-        return String(
-          item['ID']
-        ) === String(
-          companyId
-        );
-
-      });
-
-  if (!company) {
-
-    throw new Error(
-      'Company not found.'
-    );
-
-  }
-
-  const sheet =
-    getPeopleSheet();
-
-  const headers =
-    getHeaders(sheet);
-
-  const personId =
-    getNextPersonId();
-
-  let photoName = '';
-
-
-  if (
-    imageData &&
-    imageData.base64
-  ) {
-
-    if (!person['Name']) {
-
-      throw new Error(
-        'Contact name is required for photo upload.'
-      );
-
-    }
-
-    photoName =
-      uploadVisitingCard(
-        imageData.base64,
-        imageData.mimeType,
-        person['Name']
-      );
-
-  }
-
-
-  const row =
-  headers.map(function(header) {
-
-    if (header === 'ID') {
-
-      return personId;
-
-    }
-
-
-    if (header === 'Company ID') {
-
-      return companyId;
-
-    }
-
-
-    if (header === 'Company') {
-
-      return company['Company Name'] || '';
-
-    }
-
-
-    if (header === 'Photo') {
-
-      return photoName;
-
-    }
-
-
-    return (
-      person[header] ||
-      ''
-    );
-
-  });
-  
-  sheet.appendRow(row);
-
-  return {
-    success: true,
-    id: personId
-  };
-
-}
-
-
-/* =========================================================
-   UPDATE PERSON
-========================================================= */
-
-function updatePerson(
-  person,
-  imageData
-) {
-
-  const sheet =
-    getPeopleSheet();
-
-  const rowNumber =
-    findRowById(
-      sheet,
-      person['ID']
-    );
-
-  if (rowNumber === -1) {
-
-    throw new Error(
-      'Contact not found.'
-    );
-
-  }
-
-  const headers =
-    getHeaders(sheet);
-
-  const oldRow =
-    sheet
-      .getRange(
-        rowNumber,
-        1,
-        1,
-        headers.length
-      )
-      .getValues()[0];
-
-  const photoIndex =
-    headers.indexOf(
-      'Photo'
-    );
-
-  let oldPhoto = '';
-
-  if (photoIndex !== -1) {
-
-    oldPhoto =
-      String(
-        oldRow[photoIndex] || ''
-      ).trim();
-
-  }
-
-  let photoName =
-    oldPhoto;
-
-
-  if (
-    imageData &&
-    imageData.base64
-  ) {
-
-    if (!person['Name']) {
-
-      throw new Error(
-        'Contact name is required for photo upload.'
-      );
-
-    }
-
-    photoName =
-      uploadVisitingCard(
-        imageData.base64,
-        imageData.mimeType,
-        person['Name']
-      );
-
-  }
-
-
-  const row =
-    headers.map(function(header) {
-
-      if (header === 'ID') {
-        return person['ID'];
-      }
-
-      if (header === 'Company ID') {
-        return person['Company ID'];
-      }
-
-      if (header === 'Photo') {
-        return photoName;
-      }
-
-      return (
-        person[header] ||
-        ''
-      );
-
-    });
-
-
-  sheet
-    .getRange(
-      rowNumber,
-      1,
-      1,
-      headers.length
-    )
-    .setValues([row]);
-
-
-  if (
-    imageData &&
-    imageData.base64 &&
-    oldPhoto &&
-    oldPhoto !== photoName
-  ) {
-
-    try {
-
-      deleteVisitingCard(
-        oldPhoto
-      );
-
-    } catch (error) {
-
-      console.log(
-        'Old photo deletion failed: ' +
-        error.message
-      );
-
-    }
-
-  }
-
-
-  return {
-    success: true
-  };
-
-}
-
-
-/* =========================================================
-   DELETE PERSON
-========================================================= */
-
-function deletePerson(
-  personId
-) {
-
-  const sheet =
-    getPeopleSheet();
-
-  const rowNumber =
-    findRowById(
-      sheet,
-      personId
-    );
-
-  if (rowNumber === -1) {
-
-    throw new Error(
-      'Contact not found.'
-    );
-
-  }
-
-  const headers =
-    getHeaders(sheet);
-
-  const row =
-    sheet
-      .getRange(
-        rowNumber,
-        1,
-        1,
-        headers.length
-      )
-      .getValues()[0];
-
-  const photoIndex =
-    headers.indexOf(
-      'Photo'
-    );
-
-  if (photoIndex !== -1) {
-
-    const photo =
-      String(
-        row[photoIndex] || ''
-      ).trim();
-
-    if (photo) {
-
-      try {
-
-        deleteVisitingCard(
-          photo
-        );
-
-      } catch (error) {
-
-        console.log(
-          'Photo deletion failed: ' +
-          error.message
-        );
-
-      }
-
-    }
-
-  }
-
-  sheet.deleteRow(
-    rowNumber
-  );
-
-  return {
-    success: true
+    spreadsheetName: ss.getName(),
+    spreadsheetId: ss.getId(),
+    sheets: checkSheets()
   };
 
 }

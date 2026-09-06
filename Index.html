@@ -1,983 +1,110 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
   <base target="_top">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-  <title>Personal CRM</title>
+  <title>Products Hub</title>
 
   <?!= include('CSS'); ?>
-
 </head>
-
 
 <body>
 
+  <header class="topbar">
 
-<!-- =====================================================
-     HEADER
-===================================================== -->
-
-<header class="header">
-
-  <div class="logo">
-    👥 <span>Personal CRM</span>
-  </div>
-
-
-  <!-- ===================================================
-       NAVIGATION
-  ==================================================== -->
-
-  <nav class="main-nav">
-
-    <button
-      class="nav-btn active"
-      data-page="companies"
-      onclick="showPage('companies')"
-    >
-      Companies
-    </button>
-
-    <button
-      class="nav-btn"
-      data-page="Company Type"
-      onclick="showPage('Company Type')"
-    >
-      Company Type
-    </button>
-
-    <button
-      class="nav-btn"
-      data-page="Industry"
-      onclick="showPage('Industry')"
-    >
-      Industry
-    </button>
-
-    <button
-      class="nav-btn"
-      data-page="Area"
-      onclick="showPage('Area')"
-    >
-      Area
-    </button>
-
-    <button
-      class="nav-btn"
-      data-page="City"
-      onclick="showPage('City')"
-    >
-      City
-    </button>
-
-    <button
-      class="nav-btn"
-      data-page="State"
-      onclick="showPage('State')"
-    >
-      State
-    </button>
-
-    <button
-      class="nav-btn"
-      data-page="Designation"
-      onclick="showPage('Designation')"
-    >
-      Designation
-    </button>
-
-  </nav>
-
-
-  <div
-    id="companyHeaderActions"
-    class="header-actions"
-  >
-
-    <div class="search-wrap">
-
-      <span class="search-icon">
-        🔍
-      </span>
-
-      <input
-        id="searchInput"
-        class="search-box"
-        type="text"
-        placeholder="Search companies or people..."
-      >
-
-      <button
-        id="clearSearch"
-        class="clear-search"
-        type="button"
-      >
-        ×
-      </button>
-
-    </div>
-
-
-    <button
-      id="addCompanyButton"
-      class="add-btn"
-      type="button"
-    >
-      + Add Company
-    </button>
-
-  </div>
-
-</header>
-
-
-<!-- =====================================================
-     COMPANIES PAGE
-===================================================== -->
-
-<main
-  id="companiesPage"
-  class="container page"
->
-
-
-  <div class="page-header">
-
-    <div>
-
-      <h1>
-        Companies
-      </h1>
-
-      <div
-        id="companyCount"
-        class="count"
-      >
-        Loading...
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div class="table-wrap">
-
-    <table>
-
-      <thead>
-
-        <tr>
-
-          <th class="star-column">
-            ★
-          </th>
-
-          <th
-            class="sortable"
-            data-sort="Company Name"
-          >
-            Company Name
-            <span id="sort-CompanyName"></span>
-          </th>
-
-          <th
-            class="sortable"
-            data-sort="Company Type"
-          >
-            Type
-            <span id="sort-CompanyType"></span>
-          </th>
-
-          <th
-            class="sortable"
-            data-sort="Industry"
-          >
-            Industry
-            <span id="sort-Industry"></span>
-          </th>
-
-          <th
-            class="sortable"
-            data-sort="Area"
-          >
-            Area
-            <span id="sort-Area"></span>
-          </th>
-
-          <th
-            class="sortable"
-            data-sort="City"
-          >
-            City
-            <span id="sort-City"></span>
-          </th>
-
-          <th
-            class="sortable"
-            data-sort="State"
-          >
-            State
-            <span id="sort-State"></span>
-          </th>
-
-          <th>
-            Website
-          </th>
-
-          <th class="action-column">
-            Actions
-          </th>
-
-        </tr>
-
-      </thead>
-
-
-      <tbody id="companyTable">
-
-        <tr>
-
-          <td
-            colspan="10"
-            class="loading"
-          >
-            Loading companies...
-          </td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-</main>
-
-
-<!-- =====================================================
-     MASTER PAGE
-===================================================== -->
-
-<main
-  id="masterPage"
-  class="master-page page"
->
-
-
-  <div class="master-page-header">
-
-    <div>
-
-      <h1 id="masterTitle">
-        Company Type
-      </h1>
-
-      <div
-        id="masterCount"
-        class="count"
-      >
-        0 values
-      </div>
-
-    </div>
-
-
-    <button
-      id="masterAddButton"
-      class="add-btn"
-      type="button"
-      onclick="openMasterAdd()"
-    >
-      + Add
-    </button>
-
-  </div>
-
-
-  <div class="master-table-wrap">
-
-    <table class="master-table">
-
-      <thead>
-
-        <tr>
-
-          <th>
-            #
-          </th>
-
-          <th>
-            Value
-          </th>
-
-          <th class="master-action-column">
-            Actions
-          </th>
-
-        </tr>
-
-      </thead>
-
-
-      <tbody id="masterTable">
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-</main>
-
-
-<!-- =====================================================
-     MASTER FORM MODAL
-===================================================== -->
-
-<div
-  id="masterFormModal"
-  class="modal-bg"
->
-
-  <div class="modal master-form-modal">
-
-    <div class="modal-header">
-
-      <div
-        id="masterFormTitle"
-        class="modal-title"
-      >
-        Add
-      </div>
-
-
-      <button
-        id="masterFormCloseButton"
-        class="close"
-        type="button"
-      >
-        ✕
-      </button>
-
-    </div>
-
-
-    <div class="field">
-
-      <label id="masterValueLabel">
-        Value
-      </label>
-
-      <input
-        id="masterValueInput"
-        type="text"
-      >
-
-    </div>
-
-
-    <div class="modal-actions">
-
-      <button
-        id="masterCancelButton"
-        class="cancel-btn"
-        type="button"
-      >
-        Cancel
-      </button>
-
-
-      <button
-        id="masterSaveButton"
-        class="save-btn"
-        type="button"
-      >
-        Save
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- =====================================================
-     COMPANY DETAILS MODAL
-===================================================== -->
-
-<div
-  id="companyModal"
-  class="modal-bg"
->
-
-  <div class="modal company-modal">
-
-    <div class="modal-header">
+    <div class="brand">
+      <div class="brand-icon">P</div>
 
       <div>
-
-        <div
-          id="companyDetailsName"
-          class="modal-title"
-        ></div>
-
-        <div
-          id="companyDetailsSubtitle"
-          class="modal-subtitle"
-        ></div>
-
+        <div class="brand-title">Products Hub</div>
+        <div class="brand-subtitle">
+          Cable Sales Knowledge Hub
+        </div>
       </div>
-
-
-      <div class="modal-header-actions">
-
-        <button
-          id="companyFavoriteButton"
-          class="favorite-modal"
-          type="button"
-        >
-          ☆
-        </button>
-
-        <button
-          id="companyEditButton"
-          class="icon-button"
-          type="button"
-        >
-          ✏️
-        </button>
-
-        <button
-          id="companyCloseButton"
-          class="close"
-          type="button"
-        >
-          ✕
-        </button>
-
-      </div>
-
     </div>
 
-
-    <div
-      id="companyDetailsContent"
-    ></div>
+  </header>
 
 
-    <div class="section-header">
+  <div class="app-layout">
 
-      <h2>
+    <aside class="sidebar">
 
-        Contacts
-
-        <span
-          id="contactCount"
-          class="section-count"
-        >
-          (0)
-        </span>
-
-      </h2>
-
-
-      <button
-        id="addPersonButton"
-        class="small-add-btn"
-        type="button"
-      >
-        + Add Contact
+      <button class="nav-item active"
+              data-section="Dashboard">
+        🏠 Dashboard
       </button>
 
-    </div>
+      <button class="nav-item"
+              data-section="Products">
+        📦 Products
+      </button>
+
+      <button class="nav-item"
+              data-section="Applications">
+        🔧 Applications
+      </button>
+
+      <button class="nav-item"
+              data-section="Industries">
+        🏭 Industries
+      </button>
+
+      <button class="nav-item"
+              data-section="Competitors">
+        🥊 Competitors
+      </button>
 
 
-    <div
-      id="companyContacts"
-      class="people-grid"
-    ></div>
+      <div class="nav-divider"></div>
+
+      <div class="nav-heading">
+        KNOWLEDGE
+      </div>
+
+
+      <button class="nav-item"
+              data-section="Cable Knowledge">
+        📚 Cable Knowledge
+      </button>
+
+      <button class="nav-item"
+              data-section="Learning">
+        🧠 Learning
+      </button>
+
+      <button class="nav-item"
+              data-section="Career Growth">
+        🚀 Career Growth
+      </button>
+
+      <button class="nav-item"
+              data-section="Documents">
+        📄 Documents
+      </button>
+
+    </aside>
+
+
+    <main class="main-content">
+
+      <div id="app">
+
+        <div class="loading">
+          Loading Products Hub...
+        </div>
+
+      </div>
+
+    </main>
 
   </div>
 
-</div>
 
-
-<!-- =====================================================
-     PERSON DETAILS MODAL
-===================================================== -->
-
-<div
-  id="personDetailsModal"
-  class="modal-bg"
->
-
-  <div class="modal person-details-modal">
-
-    <div class="modal-header">
-
-      <div class="modal-title">
-        Contact Details
-      </div>
-
-      <button
-        id="personDetailsCloseButton"
-        class="close"
-        type="button"
-      >
-        ✕
-      </button>
-
-    </div>
-
-
-    <div
-      id="personDetailsContent"
-    ></div>
-
-  </div>
-
-</div>
-
-
-<!-- =====================================================
-     COMPANY FORM MODAL
-===================================================== -->
-
-<div
-  id="companyFormModal"
-  class="modal-bg"
->
-
-  <div class="modal form-modal">
-
-    <div class="modal-header">
-
-      <div
-        id="companyFormTitle"
-        class="modal-title"
-      >
-        Add Company
-      </div>
-
-      <button
-        id="companyFormCloseButton"
-        class="close"
-        type="button"
-      >
-        ✕
-      </button>
-
-    </div>
-
-
-    <div class="form-grid">
-
-
-      <div class="field full">
-
-        <label>
-          Company Name *
-        </label>
-
-        <input
-          id="fCompanyName"
-          type="text"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Company Type
-        </label>
-
-        <select
-          id="fCompanyType"
-        ></select>
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Industry
-        </label>
-
-        <select
-          id="fIndustry"
-        ></select>
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Area
-        </label>
-
-        <select
-          id="fArea"
-        ></select>
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          City
-        </label>
-
-        <select
-          id="fCity"
-        ></select>
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          State
-        </label>
-
-        <select
-          id="fState"
-        ></select>
-
-      </div>
-
-
-      <div class="field full">
-
-        <label>
-          Website
-        </label>
-
-        <input
-          id="fWebsite"
-          type="text"
-          placeholder="example.com"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Favorite
-        </label>
-
-        <select id="fFavorite">
-
-          <option value="No">
-            No
-          </option>
-
-          <option value="Yes">
-            Yes
-          </option>
-
-        </select>
-
-      </div>
-
-    </div>
-
-
-    <div
-      id="firstContactSection"
-      class="first-contact-section"
-    >
-
-      <div class="section-header">
-
-        <h2>
-          First Contact
-        </h2>
-
-      </div>
-
-
-      <div class="form-grid">
-
-        <div class="field">
-
-          <label>
-            Contact Name
-          </label>
-
-          <input
-            id="fFirstName"
-            type="text"
-          >
-
-        </div>
-
-
-        <div class="field">
-
-          <label>
-            Designation
-          </label>
-
-          <select
-            id="fFirstDesignation"
-          ></select>
-
-        </div>
-
-
-        <div class="field">
-
-          <label>
-            Phone
-          </label>
-
-          <input
-            id="fFirstPhone"
-            type="text"
-          >
-
-        </div>
-
-
-        <div class="field">
-
-          <label>
-            Email
-          </label>
-
-          <input
-            id="fFirstEmail"
-            type="email"
-          >
-
-        </div>
-
-
-        <div class="field full">
-
-          <label>
-            Visiting Card
-          </label>
-
-          <input
-            id="fFirstPhoto"
-            type="file"
-            accept="image/*"
-          >
-
-          <img
-            id="firstPhotoPreview"
-            class="photo-preview"
-            alt=""
-          >
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div class="modal-actions">
-
-      <button
-        id="companyCancelButton"
-        class="cancel-btn"
-        type="button"
-      >
-        Cancel
-      </button>
-
-      <button
-        id="companySaveButton"
-        class="save-btn"
-        type="button"
-      >
-        Save
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- =====================================================
-     PERSON FORM MODAL
-===================================================== -->
-
-<div
-  id="personFormModal"
-  class="modal-bg"
->
-
-  <div class="modal form-modal">
-
-    <div class="modal-header">
-
-      <div
-        id="personFormTitle"
-        class="modal-title"
-      >
-        Add Contact
-      </div>
-
-      <button
-        id="personFormCloseButton"
-        class="close"
-        type="button"
-      >
-        ✕
-      </button>
-
-    </div>
-
-
-    <div class="form-grid">
-
-      <div class="field full">
-
-        <label>
-          Contact Name *
-        </label>
-
-        <input
-          id="pName"
-          type="text"
-        >
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Designation
-        </label>
-
-        <select
-          id="pDesignation"
-        ></select>
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Phone
-        </label>
-
-        <input
-          id="pPhone"
-          type="text"
-        >
-
-      </div>
-
-
-      <div class="field full">
-
-        <label>
-          Email
-        </label>
-
-        <input
-          id="pEmail"
-          type="email"
-        >
-
-      </div>
-
-
-      <div class="field full">
-
-        <label>
-          Visiting Card
-        </label>
-
-        <input
-          id="pPhoto"
-          type="file"
-          accept="image/*"
-        >
-
-        <img
-          id="personPhotoPreview"
-          class="photo-preview"
-          alt=""
-        >
-
-      </div>
-
-    </div>
-
-
-    <div class="modal-actions">
-
-      <button
-        id="personCancelButton"
-        class="cancel-btn"
-        type="button"
-      >
-        Cancel
-      </button>
-
-      <button
-        id="personSaveButton"
-        class="save-btn"
-        type="button"
-      >
-        Save
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- =====================================================
-     TOAST
-===================================================== -->
-
-<div
-  id="toast"
-  class="toast"
-></div>
-
-<!-- =====================================================
-     LOADING OVERLAY
-===================================================== -->
-
-<div id="loadingOverlay" class="loading-overlay">
-
-  <div class="loading-spinner"></div>
-
-</div>
-
-<?!= include('JS'); ?>
+  <?!= include('JS'); ?>
 
 </body>
-
 </html>

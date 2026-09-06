@@ -1,2865 +1,78 @@
 <script>
 
 /* =========================================================
-   PERSONAL CRM
-   FRONTEND - FRESH VERSION
+   PRODUCTS HUB
+   JS.html
+   Frontend Logic
 ========================================================= */
 
 
 /* =========================================================
-   GLOBAL STATE
+   START APPLICATION
 ========================================================= */
 
-let crmData = {
+document.addEventListener('DOMContentLoaded', function () {
 
-  companies: [],
+  setupNavigation();
 
-  people: [],
+  loadDashboard();
 
-  settings: {}
-
-};
-
-let sortKey =
-  'Company Name';
-
-let sortDirection =
-  'asc';
-
-let editingCompanyId =
-  null;
-
-let editingPersonId =
-  null;
-
-let currentCompanyId =
-  null;
-
-/* =========================================================
-   CURRENT PAGE
-========================================================= */
-
-let currentPage =
-  'companies';
-
-let currentMasterField =
-  '';
-
-let editingMasterValue =
-  null;
-
-/* =========================================================
-   PAGE NAVIGATION
-========================================================= */
-
-function showPage(page) {
-
-  currentPage =
-    page;
-
-
-  /*
-     Update navigation buttons
-  */
-
-  document
-    .querySelectorAll('.nav-btn')
-    .forEach(function(button) {
-
-      button.classList.toggle(
-        'active',
-        button.dataset.page === page
-      );
-
-    });
-
-
-  /*
-     Hide all pages
-  */
-
-  document
-    .querySelectorAll('.page')
-    .forEach(function(element) {
-
-      element.classList.remove(
-        'active'
-      );
-
-    });
-
-
-  /*
-     Companies page
-  */
-
-  if (page === 'companies') {
-
-    document
-      .getElementById('companiesPage')
-      .classList.add('active');
-
-    document
-      .getElementById('companyHeaderActions')
-      .style.display = 'flex';
-
-    return;
-
-  }
-
-
-  /*
-     Master page
-  */
-
-  document
-    .getElementById('masterPage')
-    .classList.add('active');
-
-  document
-    .getElementById('companyHeaderActions')
-    .style.display = 'none';
-
-
-  openMasterPage(
-    page
-  );
-
-}
+});
 
 
 /* =========================================================
-   OPEN MASTER PAGE
+   NAVIGATION SETUP
 ========================================================= */
 
-function openMasterPage(
-  field
-) {
+function setupNavigation() {
 
-  currentMasterField =
-    field;
+  const buttons =
+    document.querySelectorAll('.nav-item');
 
-  editingMasterValue =
-    null;
+  buttons.forEach(function (button) {
 
+    button.addEventListener('click', function () {
 
-  document.getElementById(
-    'masterTitle'
-  ).textContent =
-    field;
+      const section =
+        button.getAttribute('data-section');
 
+      setActiveNavigation(button);
 
-  document.getElementById(
-    'masterValueLabel'
-  ).textContent =
-    field;
+      if (section === 'Dashboard') {
 
+        loadDashboard();
 
-  loadMasterValues();
+      } else {
 
-}
-
-
-/* =========================================================
-   LOAD MASTER VALUES
-   LOAD FROM ALREADY LOADED CRM DATA
-========================================================= */
-
-function loadMasterValues() {
-
-  const values =
-    crmData.settings[
-      currentMasterField
-    ] || [];
-
-  renderMasterValues(
-    values
-  );
-
-}
-
-/* =========================================================
-   RENDER MASTER VALUES
-========================================================= */
-
-function renderMasterValues(
-  values
-) {
-
-  values =
-    values.slice().sort(
-      function(a, b) {
-
-        return String(a)
-          .localeCompare(
-            String(b),
-            undefined,
-            {
-              sensitivity: 'base'
-            }
-          );
-
-      }
-    );
-
-
-  document.getElementById(
-    'masterCount'
-  ).textContent =
-
-    values.length +
-    (
-      values.length === 1
-        ? ' value'
-        : ' values'
-    );
-
-
-  const table =
-    document.getElementById(
-      'masterTable'
-    );
-
-
-  if (!values.length) {
-
-    table.innerHTML =
-
-      '<tr>' +
-
-        '<td colspan="3" class="empty">' +
-          'No values available.' +
-        '</td>' +
-
-      '</tr>';
-
-    return;
-
-  }
-
-
-  table.innerHTML =
-    values
-      .map(function(value, index) {
-
-        return (
-
-          '<tr>' +
-
-            '<td>' +
-              (index + 1) +
-            '</td>' +
-
-            '<td>' +
-              escapeHtml(value) +
-            '</td>' +
-
-            '<td>' +
-
-              '<div class="master-actions">' +
-
-                '<button ' +
-                  'class="master-action-btn" ' +
-                  'title="Edit" ' +
-                  'data-master-edit="' +
-                    escapeAttr(value) +
-                  '">' +
-                  '✏️' +
-                '</button>' +
-
-                '<button ' +
-                  'class="master-action-btn" ' +
-                  'title="Delete" ' +
-                  'data-master-delete="' +
-                    escapeAttr(value) +
-                  '">' +
-                  '🗑️' +
-                '</button>' +
-
-              '</div>' +
-
-            '</td>' +
-
-          '</tr>'
-
-        );
-
-      })
-      .join('');
-
-}
-
-
-/* =========================================================
-   MASTER TABLE CLICK
-========================================================= */
-
-function handleMasterTableClick(
-  event
-) {
-
-  const edit =
-    event.target.closest(
-      '[data-master-edit]'
-    );
-
-
-  if (edit) {
-
-    editMasterValue(
-      edit.dataset.masterEdit
-    );
-
-    return;
-
-  }
-
-
-  const remove =
-    event.target.closest(
-      '[data-master-delete]'
-    );
-
-
-  if (remove) {
-
-    deleteMasterValue(
-      remove.dataset.masterDelete
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   ADD MASTER
-========================================================= */
-
-function openMasterAdd() {
-
-  editingMasterValue =
-    null;
-
-
-  document.getElementById(
-    'masterFormTitle'
-  ).textContent =
-    'Add ' +
-    currentMasterField;
-
-
-  document.getElementById(
-    'masterValueInput'
-  ).value =
-    '';
-
-
-  showModal(
-    'masterFormModal'
-  );
-
-
-  setTimeout(
-    function() {
-
-      document
-        .getElementById(
-          'masterValueInput'
-        )
-        .focus();
-
-    },
-    100
-  );
-
-}
-
-
-/* =========================================================
-   EDIT MASTER
-========================================================= */
-
-function editMasterValue(
-  value
-) {
-
-  editingMasterValue =
-    value;
-
-
-  document.getElementById(
-    'masterFormTitle'
-  ).textContent =
-    'Edit ' +
-    currentMasterField;
-
-
-  document.getElementById(
-    'masterValueInput'
-  ).value =
-    value;
-
-
-  showModal(
-    'masterFormModal'
-  );
-
-
-  setTimeout(
-    function() {
-
-      const input =
-        document.getElementById(
-          'masterValueInput'
-        );
-
-      input.focus();
-      input.select();
-
-    },
-    100
-  );
-
-}
-
-
-/* =========================================================
-   SAVE MASTER
-========================================================= */
-
-function saveMasterValue() {
-
-  const button =
-    document.getElementById(
-      'masterSaveButton'
-    );
-
-
-  const value =
-    document
-      .getElementById(
-        'masterValueInput'
-      )
-      .value
-      .trim();
-
-
-  if (!value) {
-
-    alert(
-      'Please enter a value.'
-    );
-
-    return;
-
-  }
-
-
-  button.disabled =
-    true;
-
-
-  /*
-     ADD
-  */
-
-  if (
-    editingMasterValue === null
-  ) {
-
-    google.script.run
-
-      .withSuccessHandler(
-        function() {
-
-          button.disabled =
-            false;
-
-          closeMasterForm();
-
-          loadMasterValues();
-
-          refreshSettingsOnly();
-
-          showToast(
-            currentMasterField +
-            ' added successfully.'
-          );
-
-        }
-      )
-
-      .withFailureHandler(
-        function(error) {
-
-          button.disabled =
-            false;
-
-          showError(error);
-
-        }
-      )
-
-      .addMasterValue(
-        currentMasterField,
-        value
-      );
-
-    return;
-
-  }
-
-
-  /*
-     EDIT
-  */
-
-  google.script.run
-
-    .withSuccessHandler(
-      function() {
-
-        button.disabled =
-          false;
-
-        closeMasterForm();
-
-        loadMasterValues();
-
-        refreshSettingsOnly();
-
-        showToast(
-          currentMasterField +
-          ' updated successfully.'
-        );
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        button.disabled =
-          false;
-
-        showError(error);
-
-      }
-    )
-
-    .updateMasterValue(
-      currentMasterField,
-      editingMasterValue,
-      value
-    );
-
-}
-
-
-/* =========================================================
-   DELETE MASTER
-========================================================= */
-
-function deleteMasterValue(
-  value
-) {
-
-  const confirmed =
-    confirm(
-      'Delete "' +
-      value +
-      '" from ' +
-      currentMasterField +
-      '?'
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      function() {
-
-        loadMasterValues();
-
-        refreshSettingsOnly();
-
-        showToast(
-          currentMasterField +
-          ' deleted successfully.'
-        );
-
-      }
-    )
-
-    .withFailureHandler(
-      showError
-    )
-
-    .deleteMasterValue(
-      currentMasterField,
-      value
-    );
-
-}
-
-
-/* =========================================================
-   CLOSE MASTER FORM
-========================================================= */
-
-function closeMasterForm() {
-
-  hideModal(
-    'masterFormModal'
-  );
-
-  editingMasterValue =
-    null;
-
-}
-
-
-/* =========================================================
-   REFRESH SETTINGS ONLY
-========================================================= */
-
-function refreshSettingsOnly() {
-
-  google.script.run
-
-    .withSuccessHandler(
-      function(settings) {
-
-        crmData.settings =
-          settings || {};
-
-        populateSettings();
-
-      }
-    )
-
-    .getSettings();
-
-}
-
-/* =========================================================
-   PAGE LOAD
-========================================================= */
-
-window.addEventListener(
-  'load',
-  function() {
-
-    setupEvents();
-
-    loadCRM();
-
-  }
-);
-
-
-/* =========================================================
-   EVENTS
-========================================================= */
-
-function setupEvents() {
-
-  document
-    .getElementById('searchInput')
-    .addEventListener(
-      'input',
-      renderCompanies
-    );
-
-
-  document
-    .getElementById('clearSearch')
-    .addEventListener(
-      'click',
-      clearSearch
-    );
-
-
-  document
-    .getElementById('addCompanyButton')
-    .addEventListener(
-      'click',
-      openAddCompany
-    );
-
-
-  document
-    .querySelectorAll('.sortable')
-    .forEach(function(header) {
-
-      header.addEventListener(
-        'click',
-        function() {
-
-          sortCompanies(
-            header.dataset.sort
-          );
-
-        }
-      );
-
-    });
-
-
-  document
-    .getElementById('companyCloseButton')
-    .addEventListener(
-      'click',
-      closeCompanyModal
-    );
-
-
-  document
-    .getElementById('companyEditButton')
-    .addEventListener(
-      'click',
-      editCurrentCompany
-    );
-
-
-  document
-    .getElementById('companyFavoriteButton')
-    .addEventListener(
-      'click',
-      toggleCurrentFavorite
-    );
-
-
-  document
-    .getElementById('addPersonButton')
-    .addEventListener(
-      'click',
-      openAddPerson
-    );
-
-
-  document
-    .getElementById('personDetailsCloseButton')
-    .addEventListener(
-      'click',
-      closePersonDetails
-    );
-
-
-  document
-    .getElementById('companyFormCloseButton')
-    .addEventListener(
-      'click',
-      closeCompanyForm
-    );
-
-
-  document
-    .getElementById('companyCancelButton')
-    .addEventListener(
-      'click',
-      closeCompanyForm
-    );
-
-
-  document
-    .getElementById('companySaveButton')
-    .addEventListener(
-      'click',
-      saveCompany
-    );
-
-
-  document
-    .getElementById('personFormCloseButton')
-    .addEventListener(
-      'click',
-      closePersonForm
-    );
-
-
-  document
-    .getElementById('personCancelButton')
-    .addEventListener(
-      'click',
-      closePersonForm
-    );
-
-
-  document
-    .getElementById('personSaveButton')
-    .addEventListener(
-      'click',
-      savePerson
-    );
-
-
-  document
-    .getElementById('fFirstPhoto')
-    .addEventListener(
-      'change',
-      function() {
-
-        previewFile(
-          this,
-          'firstPhotoPreview'
-        );
-
-      }
-    );
-
-
-  document
-    .getElementById('pPhoto')
-    .addEventListener(
-      'change',
-      function() {
-
-        previewFile(
-          this,
-          'personPhotoPreview'
-        );
-
-      }
-    );
-
-
-  document
-    .getElementById('companyTable')
-    .addEventListener(
-      'click',
-      handleTableClick
-    );
-
-      document
-    .getElementById('masterFormCloseButton')
-    .addEventListener(
-      'click',
-      closeMasterForm
-    );
-
-
-  document
-    .getElementById('masterCancelButton')
-    .addEventListener(
-      'click',
-      closeMasterForm
-    );
-
-
-  document
-    .getElementById('masterSaveButton')
-    .addEventListener(
-      'click',
-      saveMasterValue
-    );
-
-
-  document
-    .getElementById('masterTable')
-    .addEventListener(
-      'click',
-      handleMasterTableClick
-    );
-
-  document
-    .getElementById('companyContacts')
-    .addEventListener(
-      'click',
-      handlePeopleClick
-    );
-    showPage('companies');
-
-  document
-    .querySelectorAll('.modal-bg')
-    .forEach(function(modal) {
-
-      modal.addEventListener(
-        'click',
-        function(event) {
-
-          if (
-            event.target === modal
-          ) {
-
-            modal.classList.remove(
-              'show'
-            );
-
-          }
-
-        }
-      );
-
-    });
-
-}
-
-
-/* =========================================================
-   LOAD CRM
-========================================================= */
-
-function loadCRM() {
-
-  showLoading();
-
-  showTableLoading();
-
-  google.script.run
-
-    .withSuccessHandler(
-      function(data) {
-
-        crmData =
-          data || {
-
-            companies: [],
-
-            people: [],
-
-            settings: {}
-
-          };
-
-        populateSettings();
-
-        renderCompanies();
-
-        hideLoading();
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        hideLoading();
-
-        showError(error);
-
-      }
-    )
-
-    .getCRMData();
-
-}
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
-function populateSettings() {
-
-  fillSelect(
-    'fCompanyType',
-    crmData.settings['Company Type'],
-    ''
-  );
-
-  fillSelect(
-    'fIndustry',
-    crmData.settings['Industry'],
-    ''
-  );
-
-  fillSelect(
-    'fArea',
-    crmData.settings['Area'],
-    ''
-  );
-
-  fillSelect(
-    'fCity',
-    crmData.settings['City'],
-    ''
-  );
-
-  fillSelect(
-    'fState',
-    crmData.settings['State'],
-    ''
-  );
-
-  fillSelect(
-    'fFirstDesignation',
-    crmData.settings['Designation'],
-    ''
-  );
-
-  fillSelect(
-    'pDesignation',
-    crmData.settings['Designation'],
-    ''
-  );
-
-}
-
-
-/* =========================================================
-   FILL SELECT
-========================================================= */
-
-function fillSelect(
-  id,
-  values,
-  currentValue
-) {
-
-  const select =
-    document.getElementById(id);
-
-  if (!select) {
-    return;
-  }
-
-  const existing =
-    String(
-      currentValue || ''
-    ).trim();
-
-  const list = [];
-
-  (values || [])
-    .forEach(function(value) {
-
-      const text =
-        String(
-          value || ''
-        ).trim();
-
-      if (
-        text &&
-        list.indexOf(text) === -1
-      ) {
-
-        list.push(text);
+        loadSection(section);
 
       }
 
     });
-
-  if (
-    existing &&
-    list.indexOf(existing) === -1
-  ) {
-
-    list.push(existing);
-
-  }
-
-  select.innerHTML =
-    '<option value="">Select</option>';
-
-  list.forEach(function(value) {
-
-    const option =
-      document.createElement(
-        'option'
-      );
-
-    option.value =
-      value;
-
-    option.textContent =
-      value;
-
-    select.appendChild(
-      option
-    );
 
   });
 
-  select.value =
-    existing;
-
 }
 
 
 /* =========================================================
-   TABLE LOADING
+   ACTIVE NAVIGATION
 ========================================================= */
 
-function showTableLoading() {
+function setActiveNavigation(activeButton) {
 
-  document.getElementById(
-    'companyTable'
-  ).innerHTML =
+  const buttons =
+    document.querySelectorAll('.nav-item');
 
-    '<tr>' +
-      '<td colspan="10" class="loading">' +
-        'Loading companies...' +
-      '</td>' +
-    '</tr>';
+  buttons.forEach(function (button) {
 
-}
+    button.classList.remove('active');
 
+  });
 
-/* =========================================================
-   SEARCH
-========================================================= */
+  if (activeButton) {
 
-function getSearchText() {
-
-  return String(
-    document.getElementById(
-      'searchInput'
-    ).value || ''
-  )
-    .trim()
-    .toLowerCase();
-
-}
-
-
-function clearSearch() {
-
-  const input =
-    document.getElementById(
-      'searchInput'
-    );
-
-  input.value =
-    '';
-
-  renderCompanies();
-
-  input.focus();
-
-}
-
-
-/* =========================================================
-   RENDER COMPANIES
-========================================================= */
-
-function renderCompanies() {
-
-  const search =
-    getSearchText();
-
-  document.getElementById(
-    'clearSearch'
-  ).style.display =
-    search
-      ? 'block'
-      : 'none';
-
-
-  let companies =
-    crmData.companies.slice();
-
-
-  /*
-     Search company and contacts
-  */
-
-  if (search) {
-
-    companies =
-      companies.filter(
-        function(company) {
-
-          const companyText =
-            [
-
-              company['Company Name'],
-
-              company['Company Type'],
-
-              company['Industry'],
-
-              company['Area'],
-
-              company['City'],
-
-              company['State'],
-
-              company['Website']
-
-            ]
-              .join(' ')
-              .toLowerCase();
-
-
-          const people =
-            getPeopleForCompany(
-              company['ID']
-            );
-
-
-          const peopleText =
-            people
-              .map(function(person) {
-
-                return [
-
-                  person['Name'],
-
-                  person['Designation'],
-
-                  person['Phone'],
-
-                  person['Email']
-
-                ]
-                  .join(' ');
-
-              })
-              .join(' ')
-              .toLowerCase();
-
-
-          return (
-            companyText.indexOf(search) !== -1 ||
-            peopleText.indexOf(search) !== -1
-          );
-
-        }
-      );
-
-  }
-
-
-  /*
-     Favorites always first.
-  */
-
-  companies.sort(
-    function(a, b) {
-
-      const favoriteA =
-        normalize(
-          a['Favorite']
-        ) === 'yes'
-          ? 1
-          : 0;
-
-      const favoriteB =
-        normalize(
-          b['Favorite']
-        ) === 'yes'
-          ? 1
-          : 0;
-
-      if (
-        favoriteA !==
-        favoriteB
-      ) {
-
-        return favoriteB -
-               favoriteA;
-
-      }
-
-
-      let valueA;
-      let valueB;
-
-
-      if (
-        sortKey ===
-        'Contacts'
-      ) {
-
-        valueA =
-          getPeopleForCompany(
-            a['ID']
-          ).length;
-
-        valueB =
-          getPeopleForCompany(
-            b['ID']
-          ).length;
-
-        return sortDirection === 'asc'
-          ? valueA - valueB
-          : valueB - valueA;
-
-      }
-
-
-      valueA =
-        normalize(
-          a[sortKey]
-        );
-
-      valueB =
-        normalize(
-          b[sortKey]
-        );
-
-
-      if (
-        valueA < valueB
-      ) {
-
-        return sortDirection === 'asc'
-          ? -1
-          : 1;
-
-      }
-
-      if (
-        valueA > valueB
-      ) {
-
-        return sortDirection === 'asc'
-          ? 1
-          : -1;
-
-      }
-
-      return 0;
-
-    }
-  );
-
-
-  updateSortArrows();
-
-
-  const tbody =
-    document.getElementById(
-      'companyTable'
-    );
-
-
-  if (!companies.length) {
-
-    tbody.innerHTML =
-
-      '<tr>' +
-        '<td colspan="10" class="empty">' +
-          'No companies found.' +
-        '</td>' +
-      '</tr>';
-
-    updateCount(
-      companies.length,
-      search
-    );
-
-    return;
-
-  }
-
-
-  tbody.innerHTML =
-    companies
-      .map(
-        renderCompanyRow
-      )
-      .join('');
-
-
-  updateCount(
-    companies.length,
-    search
-  );
-
-}
-
-
-/* =========================================================
-   COMPANY ROW
-========================================================= */
-
-function renderCompanyRow(
-  company
-) {
-
-  const id =
-    company['ID'];
-
-  const favorite =
-    normalize(
-      company['Favorite']
-    ) === 'yes';
-
-  const people =
-    getPeopleForCompany(
-      id
-    );
-
-
-  let contactsHtml =
-    '<span class="more-contacts">' +
-      'No contacts' +
-    '</span>';
-
-
-  if (people.length) {
-
-    const visible =
-      people.slice(
-        0,
-        2
-      );
-
-    contactsHtml =
-      '<div class="contact-list-cell">' +
-
-      visible
-        .map(function(person) {
-
-          return (
-
-            '<button ' +
-              'class="contact-name-link" ' +
-              'data-person-id="' +
-              escapeAttr(
-                person['ID']
-              ) +
-              '">' +
-              escapeHtml(
-                person['Name']
-              ) +
-            '</button>'
-
-          );
-
-        })
-        .join('');
-
-
-    if (
-      people.length > 2
-    ) {
-
-      contactsHtml +=
-
-        '<span class="more-contacts">' +
-          '+' +
-          (people.length - 2) +
-          ' more' +
-        '</span>';
-
-    }
-
-    contactsHtml +=
-      '</div>';
-
-  }
-
-
-  let websiteHtml =
-    '';
-
-
-  if (
-    company['Website']
-  ) {
-
-    websiteHtml =
-
-      '<a ' +
-        'class="website-link" ' +
-        'href="' +
-          escapeAttr(
-            makeWebsiteUrl(
-              company['Website']
-            )
-          ) +
-        '" ' +
-        'target="_blank">' +
-        '🌐 Open' +
-      '</a>';
-
-  }
-
-
-  return (
-
-    '<tr>' +
-
-      '<td class="star-column">' +
-
-        '<span ' +
-          'class="favorite ' +
-            (
-              favorite
-                ? 'active'
-                : 'normal'
-            ) +
-          '" ' +
-          'data-favorite-id="' +
-            escapeAttr(id) +
-          '">' +
-          (
-            favorite
-              ? '★'
-              : '☆'
-          ) +
-        '</span>' +
-
-      '</td>' +
-
-
-      '<td>' +
-
-        '<span ' +
-          'class="company-link" ' +
-          'data-company-id="' +
-            escapeAttr(id) +
-          '">' +
-
-          escapeHtml(
-            company['Company Name']
-          ) +
-
-        '</span>' +
-
-      '</td>' +
-
-
-      '<td>' +
-        escapeHtml(
-          company['Company Type']
-        ) +
-      '</td>' +
-
-
-      '<td>' +
-        escapeHtml(
-          company['Industry']
-        ) +
-      '</td>' +
-
-
-      '<td>' +
-        escapeHtml(
-          company['Area']
-        ) +
-      '</td>' +
-
-
-      '<td>' +
-        escapeHtml(
-          company['City']
-        ) +
-      '</td>' +
-
-
-      '<td>' +
-        escapeHtml(
-          company['State']
-        ) +
-      '</td>' +
-
-      '<td>' +
-        websiteHtml +
-      '</td>' +
-
-
-      '<td>' +
-
-        '<div class="row-actions">' +
-
-          '<button ' +
-            'class="row-action edit-company" ' +
-            'data-company-id="' +
-              escapeAttr(id) +
-            '" ' +
-            'title="Edit">' +
-            '✏️' +
-          '</button>' +
-
-          '<button ' +
-            'class="row-action delete-company" ' +
-            'data-company-id="' +
-              escapeAttr(id) +
-            '" ' +
-            'title="Delete">' +
-            '🗑️' +
-          '</button>' +
-
-        '</div>' +
-
-      '</td>' +
-
-    '</tr>'
-
-  );
-
-}
-
-
-/* =========================================================
-   TABLE CLICK HANDLER
-========================================================= */
-
-function handleTableClick(
-  event
-) {
-
-  const favorite =
-    event.target.closest(
-      '[data-favorite-id]'
-    );
-
-  if (favorite) {
-
-    toggleFavorite(
-      favorite.dataset.favoriteId
-    );
-
-    return;
-
-  }
-
-
-  const company =
-    event.target.closest(
-      '[data-company-id]'
-    );
-
-  if (
-    company &&
-    !event.target.closest(
-      '.edit-company'
-    ) &&
-    !event.target.closest(
-      '.delete-company'
-    )
-  ) {
-
-    openCompanyDetails(
-      company.dataset.companyId
-    );
-
-    return;
-
-  }
-
-
-  const edit =
-    event.target.closest(
-      '.edit-company'
-    );
-
-  if (edit) {
-
-    openEditCompany(
-      edit.dataset.companyId
-    );
-
-    return;
-
-  }
-
-
-  const remove =
-    event.target.closest(
-      '.delete-company'
-    );
-
-  if (remove) {
-
-    deleteCompany(
-      remove.dataset.companyId
-    );
-
-    return;
-
-  }
-
-
-  const person =
-    event.target.closest(
-      '[data-person-id]'
-    );
-
-  if (person) {
-
-    openPersonDetails(
-      person.dataset.personId
-    );
-
-  }
-
-}
-
-/* =========================================================
-   PEOPLE CLICK
-========================================================= */
-
-function handlePeopleClick(
-  event
-) {
-
-  /* ================================
-     EDIT CONTACT
-  ================================= */
-
-  const edit =
-    event.target.closest(
-      '.edit-person'
-    );
-
-  if (edit) {
-
-    event.stopPropagation();
-
-    openEditPerson(
-      edit.dataset.personId
-    );
-
-    return;
-
-  }
-
-
-  /* ================================
-     DELETE CONTACT
-  ================================= */
-
-  const remove =
-    event.target.closest(
-      '.delete-person'
-    );
-
-  if (remove) {
-
-    event.stopPropagation();
-
-    deletePerson(
-      remove.dataset.personId
-    );
-
-    return;
-
-  }
-
-
-  /* ================================
-     OPEN CONTACT DETAILS
-  ================================= */
-
-  const person =
-    event.target.closest(
-      '[data-person-id]'
-    );
-
-  if (person) {
-
-    openPersonDetails(
-      person.dataset.personId
-    );
-
-    return;
-
-  }
-
-}
-
-/* =========================================================
-   SORT
-========================================================= */
-
-function sortCompanies(
-  key
-) {
-
-  if (
-    sortKey === key
-  ) {
-
-    sortDirection =
-      sortDirection === 'asc'
-        ? 'desc'
-        : 'asc';
-
-  } else {
-
-    sortKey =
-      key;
-
-    sortDirection =
-      'asc';
-
-  }
-
-  renderCompanies();
-
-}
-
-
-/* =========================================================
-   SORT ARROWS
-========================================================= */
-
-function updateSortArrows() {
-
-  const map = {
-
-    'Company Name':
-      'sort-CompanyName',
-
-    'Company Type':
-      'sort-CompanyType',
-
-    'Industry':
-      'sort-Industry',
-
-    'Area':
-      'sort-Area',
-
-    'City':
-      'sort-City',
-
-    'State':
-      'sort-State',
-
-  };
-
-
-  Object.keys(map)
-    .forEach(function(key) {
-
-      const element =
-        document.getElementById(
-          map[key]
-        );
-
-      if (!element) {
-        return;
-      }
-
-      element.textContent =
-        key === sortKey
-          ? (
-              sortDirection === 'asc'
-                ? '▲'
-                : '▼'
-            )
-          : '';
-
-    });
-
-}
-
-
-/* =========================================================
-   COUNT
-========================================================= */
-
-function updateCount(
-  visibleCount,
-  search
-) {
-
-  const total =
-    crmData.companies.length;
-
-  const people =
-    crmData.people.length;
-
-  let text =
-    total +
-    (
-      total === 1
-        ? ' company'
-        : ' companies'
-    ) +
-    ' • ' +
-    people +
-    (
-      people === 1
-        ? ' contact'
-        : ' contacts'
-    );
-
-  if (search) {
-
-    text +=
-      ' • ' +
-      visibleCount +
-      ' shown';
-
-  }
-
-  document.getElementById(
-    'companyCount'
-  ).textContent =
-    text;
-
-}
-
-
-/* =========================================================
-   PEOPLE FOR COMPANY
-========================================================= */
-
-function getPeopleForCompany(
-  companyId
-) {
-
-  return crmData.people
-    .filter(function(person) {
-
-      return String(
-        person['Company ID']
-      ) === String(
-        companyId
-      );
-
-    })
-    .sort(function(a, b) {
-
-      return String(
-        a['Name'] || ''
-      ).localeCompare(
-        String(
-          b['Name'] || ''
-        )
-      );
-
-    });
-
-}
-
-
-/* =========================================================
-   COMPANY DETAILS
-========================================================= */
-
-function openCompanyDetails(
-  companyId
-) {
-
-  const company =
-    crmData.companies
-      .find(function(item) {
-
-        return String(
-          item['ID']
-        ) === String(
-          companyId
-        );
-
-      });
-
-  if (!company) {
-    return;
-  }
-
-  currentCompanyId =
-    companyId;
-
-
-  document.getElementById(
-    'companyDetailsName'
-  ).textContent =
-    company['Company Name'];
-
-
-  document.getElementById(
-    'companyDetailsSubtitle'
-  ).textContent =
-    [
-      company['Company Type'],
-      company['Industry']
-    ]
-      .filter(Boolean)
-      .join(' • ');
-
-
-  document.getElementById(
-    'companyFavoriteButton'
-  ).textContent =
-    normalize(
-      company['Favorite']
-    ) === 'yes'
-      ? '★'
-      : '☆';
-
-
-  renderCompanyDetails(
-    company
-  );
-
-
-  renderCompanyContacts(
-    companyId
-  );
-
-
-  showModal(
-    'companyModal'
-  );
-
-}
-
-
-/* =========================================================
-   COMPANY DETAILS CONTENT
-========================================================= */
-
-function renderCompanyDetails(
-  company
-) {
-
-  const fields = [
-
-    [
-      'Area',
-      company['Area']
-    ],
-
-    [
-      'City',
-      company['City']
-    ],
-
-    [
-      'State',
-      company['State']
-    ],
-
-    [
-      'Website',
-      company['Website']
-    ]
-
-  ];
-
-
-  document.getElementById(
-    'companyDetailsContent'
-  ).innerHTML =
-
-    '<div class="company-detail-grid">' +
-
-      fields
-        .map(function(field) {
-
-          let value =
-            escapeHtml(
-              field[1]
-            );
-
-          if (
-            field[0] === 'Website' &&
-            field[1]
-          ) {
-
-            value =
-
-              '<a ' +
-                'class="website-link" ' +
-                'href="' +
-                  escapeAttr(
-                    makeWebsiteUrl(
-                      field[1]
-                    )
-                  ) +
-                '" ' +
-                'target="_blank">' +
-                escapeHtml(
-                  field[1]
-                ) +
-              '</a>';
-
-          }
-
-          return (
-
-            '<div class="company-detail-box">' +
-
-              '<div class="detail-label">' +
-                field[0] +
-              '</div>' +
-
-              '<div class="detail-value">' +
-                (
-                  value ||
-                  '—'
-                ) +
-              '</div>' +
-
-            '</div>'
-
-          );
-
-        })
-        .join('') +
-
-    '</div>';
-
-}
-
-
-/* =========================================================
-   COMPANY CONTACTS
-========================================================= */
-
-function renderCompanyContacts(
-  companyId
-) {
-
-  const people =
-    getPeopleForCompany(
-      companyId
-    );
-
-
-  document.getElementById(
-    'contactCount'
-  ).textContent =
-    '(' +
-    people.length +
-    ')';
-
-
-  const container =
-    document.getElementById(
-      'companyContacts'
-    );
-
-
-  if (!people.length) {
-
-    container.innerHTML =
-
-      '<div class="empty">' +
-        'No contacts yet.' +
-      '</div>';
-
-    return;
-
-  }
-
-
-  container.innerHTML =
-    people
-      .map(
-        renderPersonCard
-      )
-      .join('');
-
-}
-
-
-/* =========================================================
-   PERSON CARD
-========================================================= */
-
-function renderPersonCard(
-  person
-) {
-
-  const photo =
-    person.photoUrl || '';
-
-  const phone =
-    String(
-      person['Phone'] || ''
-    ).trim();
-
-  const email =
-    String(
-      person['Email'] || ''
-    ).trim();
-
-
-  let avatarHtml =
-
-    '<span class="person-avatar-text">' +
-      '👤' +
-    '</span>';
-
-
-  if (photo) {
-
-    avatarHtml =
-
-      '<img ' +
-        'src="' +
-          escapeAttr(photo) +
-        '" ' +
-        'alt="" ' +
-      '>';
-
-  }
-
-
-  return (
-
-    '<div class="person-card">' +
-
-      '<div class="person-top">' +
-
-        '<div ' +
-          'class="person-avatar" ' +
-          'data-person-id="' +
-            escapeAttr(
-              person['ID']
-            ) +
-          '">' +
-
-          avatarHtml +
-
-        '</div>' +
-
-
-        '<div class="person-main">' +
-
-          '<button ' +
-            'class="person-name" ' +
-            'data-person-id="' +
-              escapeAttr(
-                person['ID']
-              ) +
-            '">' +
-
-            escapeHtml(
-              person['Name']
-            ) +
-
-          '</button>' +
-
-          '<div class="person-designation">' +
-
-            (
-              escapeHtml(
-                person['Designation']
-              ) ||
-              '—'
-            ) +
-
-          '</div>' +
-
-        '</div>' +
-
-
-        '<div class="person-actions">' +
-
-          '<button ' +
-            'class="person-action edit-person" ' +
-            'data-person-id="' +
-              escapeAttr(
-                person['ID']
-              ) +
-            '">' +
-            '✏️' +
-          '</button>' +
-
-          '<button ' +
-            'class="person-action delete-person" ' +
-            'data-person-id="' +
-              escapeAttr(
-                person['ID']
-              ) +
-            '">' +
-            '🗑️' +
-          '</button>' +
-
-        '</div>' +
-
-      '</div>' +
-
-
-      '<div class="person-info">' +
-
-        (
-          phone
-            ? (
-                '<a href="tel:' +
-                  escapeAttr(phone) +
-                '">' +
-                  '📞 ' +
-                  escapeHtml(phone) +
-                '</a>'
-              )
-            : ''
-        ) +
-
-        (
-          email
-            ? (
-                '<a href="mailto:' +
-                  escapeAttr(email) +
-                '">' +
-                  '✉️ ' +
-                  escapeHtml(email) +
-                '</a>'
-              )
-            : ''
-        ) +
-
-      '</div>' +
-
-
-      '<div class="person-buttons">' +
-
-        (
-          phone
-            ? (
-                '<a href="tel:' +
-                  escapeAttr(phone) +
-                '">' +
-                  '📞 Call' +
-                '</a>' +
-
-                '<a href="' +
-                  escapeAttr(
-                    makeWhatsAppUrl(
-                      phone
-                    )
-                  ) +
-                  '" target="_blank">' +
-                  '💬 WhatsApp' +
-                '</a>'
-              )
-            : ''
-        ) +
-
-        (
-          email
-            ? (
-                '<a href="mailto:' +
-                  escapeAttr(email) +
-                '">' +
-                  '✉️ Email' +
-                '</a>'
-              )
-            : ''
-        ) +
-
-      '</div>' +
-
-    '</div>'
-
-  );
-
-}
-
-
-/* =========================================================
-   ADD COMPANY
-========================================================= */
-
-function openAddCompany() {
-
-  editingCompanyId =
-    null;
-
-  document.getElementById(
-    'companyFormTitle'
-  ).textContent =
-    'Add Company';
-
-
-  clearCompanyForm();
-
-
-  document.getElementById(
-    'firstContactSection'
-  ).style.display =
-    'block';
-
-
-  document.getElementById(
-    'companySaveButton'
-  ).textContent =
-    'Save';
-
-    document.getElementById(
-  'companySaveButton'
-).disabled =
-  false;
-
-  showModal(
-    'companyFormModal'
-  );
-
-}
-
-
-/* =========================================================
-   EDIT COMPANY
-========================================================= */
-
-function openEditCompany(
-  companyId
-) {
-
-  const company =
-    crmData.companies
-      .find(function(item) {
-
-        return String(
-          item['ID']
-        ) === String(
-          companyId
-        );
-
-      });
-
-  if (!company) {
-    return;
-  }
-
-  editingCompanyId =
-    companyId;
-
-
-  document.getElementById(
-    'companyFormTitle'
-  ).textContent =
-    'Edit Company';
-
-
-  document.getElementById(
-    'firstContactSection'
-  ).style.display =
-    'none';
-
-
-  document.getElementById(
-    'companySaveButton'
-  ).textContent =
-    'Save Changes';
-
-    document.getElementById(
-  'companySaveButton'
-).disabled =
-  false;
-
-
-  document.getElementById(
-    'fCompanyName'
-  ).value =
-    company['Company Name'] || '';
-
-
-  fillSelect(
-    'fCompanyType',
-    crmData.settings['Company Type'],
-    company['Company Type']
-  );
-
-  fillSelect(
-    'fIndustry',
-    crmData.settings['Industry'],
-    company['Industry']
-  );
-
-  fillSelect(
-    'fArea',
-    crmData.settings['Area'],
-    company['Area']
-  );
-
-  fillSelect(
-    'fCity',
-    crmData.settings['City'],
-    company['City']
-  );
-
-  fillSelect(
-    'fState',
-    crmData.settings['State'],
-    company['State']
-  );
-
-
-  document.getElementById(
-    'fWebsite'
-  ).value =
-    company['Website'] || '';
-
-
-  document.getElementById(
-    'fFavorite'
-  ).value =
-    company['Favorite'] || 'No';
-
-
-  showModal(
-    'companyFormModal'
-  );
-
-}
-
-
-/* =========================================================
-   CLEAR COMPANY FORM
-========================================================= */
-
-function clearCompanyForm() {
-
-  document.getElementById(
-    'fCompanyName'
-  ).value =
-    '';
-
-  fillSelect(
-    'fCompanyType',
-    crmData.settings['Company Type'],
-    ''
-  );
-
-  fillSelect(
-    'fIndustry',
-    crmData.settings['Industry'],
-    ''
-  );
-
-  fillSelect(
-    'fArea',
-    crmData.settings['Area'],
-    ''
-  );
-
-  fillSelect(
-    'fCity',
-    crmData.settings['City'],
-    ''
-  );
-
-  fillSelect(
-    'fState',
-    crmData.settings['State'],
-    ''
-  );
-
-
-  document.getElementById(
-    'fWebsite'
-  ).value =
-    '';
-
-
-  document.getElementById(
-    'fFavorite'
-  ).value =
-    'No';
-
-
-  document.getElementById(
-    'fFirstName'
-  ).value =
-    '';
-
-  fillSelect(
-    'fFirstDesignation',
-    crmData.settings['Designation'],
-    ''
-  );
-
-  document.getElementById(
-    'fFirstPhone'
-  ).value =
-    '';
-
-  document.getElementById(
-    'fFirstEmail'
-  ).value =
-    '';
-
-
-  clearFile(
-    'fFirstPhoto',
-    'firstPhotoPreview'
-  );
-
-}
-
-
-/* =========================================================
-   SAVE COMPANY
-========================================================= */
-
-async function saveCompany() {
-
-  const button =
-    document.getElementById(
-      'companySaveButton'
-    );
-
-  button.disabled =
-    true;
-
-
-  try {
-
-    const name =
-      document.getElementById(
-        'fCompanyName'
-      ).value.trim();
-
-
-    if (!name) {
-
-      throw new Error(
-        'Company Name is required.'
-      );
-
-    }
-
-
-    const company = {
-
-      'ID':
-        editingCompanyId || '',
-
-      'Company Name':
-        name,
-
-      'Company Type':
-        document.getElementById(
-          'fCompanyType'
-        ).value,
-
-      'Industry':
-        document.getElementById(
-          'fIndustry'
-        ).value,
-
-      'Area':
-        document.getElementById(
-          'fArea'
-        ).value,
-
-      'City':
-        document.getElementById(
-          'fCity'
-        ).value,
-
-      'State':
-        document.getElementById(
-          'fState'
-        ).value,
-
-      'Website':
-        document.getElementById(
-          'fWebsite'
-        ).value.trim(),
-
-      'Favorite':
-        document.getElementById(
-          'fFavorite'
-        ).value
-
-    };
-
-
-    /*
-       EDIT
-    */
-
-    if (editingCompanyId) {
-
-      google.script.run
-
-        .withSuccessHandler(
-          function() {
-
-            closeCompanyForm();
-
-            showToast(
-              'Company updated successfully.'
-            );
-
-            loadCRM();
-
-          }
-        )
-
-        .withFailureHandler(
-          function(error) {
-
-            button.disabled =
-              false;
-
-            showError(error);
-
-          }
-        )
-
-        .updateCompany(
-          company
-        );
-
-      return;
-
-    }
-
-
-    /*
-       ADD
-    */
-
-    const firstName =
-      document.getElementById(
-        'fFirstName'
-      ).value.trim();
-
-
-    const firstPhone =
-      document.getElementById(
-        'fFirstPhone'
-      ).value.trim();
-
-
-    const firstEmail =
-      document.getElementById(
-        'fFirstEmail'
-      ).value.trim();
-
-
-    const firstDesignation =
-      document.getElementById(
-        'fFirstDesignation'
-      ).value;
-
-
-    const file =
-      document.getElementById(
-        'fFirstPhoto'
-      ).files[0];
-
-
-    if (
-      file &&
-      !firstName
-    ) {
-
-      throw new Error(
-        'Enter the contact name before uploading a visiting card.'
-      );
-
-    }
-
-
-    let imageData =
-      null;
-
-
-    if (file) {
-
-      imageData =
-        await readImageFile(
-          file
-        );
-
-    }
-
-
-    google.script.run
-
-      .withSuccessHandler(
-        function(result) {
-
-          const companyId =
-            result.id;
-
-
-          if (!firstName) {
-
-            closeCompanyForm();
-
-            showToast(
-              'Company added successfully.'
-            );
-
-            loadCRM();
-
-            return;
-
-          }
-
-
-          const person = {
-
-            'ID':
-              '',
-
-            'Company ID':
-              companyId,
-
-            'Name':
-              firstName,
-
-            'Designation':
-              firstDesignation,
-
-            'Phone':
-              firstPhone,
-
-            'Email':
-              firstEmail
-
-          };
-
-
-          google.script.run
-
-            .withSuccessHandler(
-              function() {
-
-                closeCompanyForm();
-
-                showToast(
-                  'Company and contact added successfully.'
-                );
-
-                loadCRM();
-
-              }
-            )
-
-            .withFailureHandler(
-              function(error) {
-
-                button.disabled =
-                  false;
-
-                showError(error);
-
-              }
-            )
-
-            .addPerson(
-              companyId,
-              person,
-              imageData
-            );
-
-        }
-      )
-
-      .withFailureHandler(
-        function(error) {
-
-          button.disabled =
-            false;
-
-          showError(error);
-
-        }
-      )
-
-      .addCompany(
-        company
-      );
-
-  }
-
-  catch (error) {
-
-    button.disabled =
-      false;
-
-    showError(error);
+    activeButton.classList.add('active');
 
   }
 
@@ -2867,1354 +80,683 @@ async function saveCompany() {
 
 
 /* =========================================================
-   DELETE COMPANY
+   DASHBOARD
 ========================================================= */
 
-function deleteCompany(
-  companyId
-) {
-
-  const company =
-    crmData.companies
-      .find(function(item) {
-
-        return String(
-          item['ID']
-        ) === String(
-          companyId
-        );
-
-      });
-
-  if (!company) {
-    return;
-  }
-
-
-  const people =
-    getPeopleForCompany(
-      companyId
-    );
-
-
-  let message =
-    'Delete "' +
-    company['Company Name'] +
-    '"?';
-
-
-  if (people.length) {
-
-    message =
-      'Delete "' +
-      company['Company Name'] +
-      '" and its ' +
-      people.length +
-      ' contact(s)?';
-
-  }
-
-
-  if (!confirm(message)) {
-    return;
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      function() {
-
-        if (
-          String(
-            currentCompanyId
-          ) === String(
-            companyId
-          )
-        ) {
-
-          closeCompanyModal();
-
-        }
-
-        showToast(
-          'Company deleted.'
-        );
-
-        loadCRM();
-
-      }
-    )
-
-    .withFailureHandler(
-      showError
-    )
-
-    .deleteCompany(
-      companyId
-    );
-
-}
-
-
-/* =========================================================
-   TOGGLE FAVORITE
-========================================================= */
-
-function toggleFavorite(
-  companyId
-) {
-
-  google.script.run
-
-    .withSuccessHandler(
-      function(result) {
-
-        const company =
-          crmData.companies
-            .find(function(item) {
-
-              return String(
-                item['ID']
-              ) === String(
-                companyId
-              );
-
-            });
-
-
-        if (company) {
-
-          company['Favorite'] =
-            result.favorite;
-
-        }
-
-
-        if (
-          String(
-            currentCompanyId
-          ) === String(
-            companyId
-          )
-        ) {
-
-          document.getElementById(
-            'companyFavoriteButton'
-          ).textContent =
-            result.favorite === 'Yes'
-              ? '★'
-              : '☆';
-
-        }
-
-
-        renderCompanies();
-
-        showToast(
-          'Favorite updated.'
-        );
-
-      }
-    )
-
-    .withFailureHandler(
-      showError
-    )
-
-    .toggleFavorite(
-      companyId
-    );
-
-}
-
-
-/* =========================================================
-   CURRENT FAVORITE
-========================================================= */
-
-function toggleCurrentFavorite() {
-
-  if (
-    !currentCompanyId
-  ) {
-
-    return;
-
-  }
-
-  toggleFavorite(
-    currentCompanyId
-  );
-
-}
-
-
-/* =========================================================
-   EDIT CURRENT COMPANY
-========================================================= */
-
-function editCurrentCompany() {
-
-  if (
-    !currentCompanyId
-  ) {
-
-    return;
-
-  }
-
-  closeCompanyModal();
-
-  openEditCompany(
-    currentCompanyId
-  );
-
-}
-
-
-/* =========================================================
-   ADD PERSON
-========================================================= */
-
-function openAddPerson() {
-
-  if (
-    !currentCompanyId
-  ) {
-
-    return;
-
-  }
-
-
-  editingPersonId =
-    null;
-
-
-  document.getElementById(
-    'personFormTitle'
-  ).textContent =
-    'Add Contact';
-
-
-  document.getElementById(
-    'pName'
-  ).value =
-    '';
-
-
-  fillSelect(
-    'pDesignation',
-    crmData.settings['Designation'],
-    ''
-  );
-
-
-  document.getElementById(
-    'pPhone'
-  ).value =
-    '';
-
-  document.getElementById(
-    'pEmail'
-  ).value =
-    '';
-
-
-  clearFile(
-    'pPhoto',
-    'personPhotoPreview'
-  );
-
-
-  document.getElementById(
-    'personSaveButton'
-  ).textContent =
-    'Save';
-
-
-  showModal(
-    'personFormModal'
-  );
-
-}
-
-
-/* =========================================================
-   EDIT PERSON
-========================================================= */
-
-function openEditPerson(
-  personId
-) {
-
-  const person =
-    crmData.people
-      .find(function(item) {
-
-        return String(
-          item['ID']
-        ) === String(
-          personId
-        );
-
-      });
-
-  if (!person) {
-    return;
-  }
-
-
-  editingPersonId =
-    personId;
-
-  currentCompanyId =
-    person['Company ID'];
-
-
-  document.getElementById(
-    'personFormTitle'
-  ).textContent =
-    'Edit Contact';
-
-
-  document.getElementById(
-    'pName'
-  ).value =
-    person['Name'] || '';
-
-
-  fillSelect(
-    'pDesignation',
-    crmData.settings['Designation'],
-    person['Designation']
-  );
-
-
-  document.getElementById(
-    'pPhone'
-  ).value =
-    person['Phone'] || '';
-
-
-  document.getElementById(
-    'pEmail'
-  ).value =
-    person['Email'] || '';
-
-
-  clearFile(
-    'pPhoto',
-    'personPhotoPreview'
-  );
-
-
-  if (
-    person.photoUrl
-  ) {
-
-    const preview =
-      document.getElementById(
-        'personPhotoPreview'
-      );
-
-    preview.src =
-      person.photoUrl;
-
-    preview.style.display =
-      'block';
-
-  }
-
-
-  document.getElementById(
-    'personSaveButton'
-  ).textContent =
-    'Save Changes';
-
-    document.getElementById(
-  'personSaveButton'
-).disabled =
-  false;
-
-hideModal(
-  'personDetailsModal'
-);
-
-  showModal(
-    'personFormModal'
-  );
-
-}
-
-
-/* =========================================================
-   SAVE PERSON  
-========================================================= */
-
-async function savePerson() {
-
-  const button =
-    document.getElementById(
-      'personSaveButton'
-    );
-
-  button.disabled =
-    true;
-
-
-  try {
-
-    const name =
-      document.getElementById(
-        'pName'
-      ).value.trim();
-
-
-    if (!name) {
-
-      throw new Error(
-        'Contact Name is required.'
-      );
-
-    }
-
-
-    const person = {
-
-      'ID':
-        editingPersonId || '',
-
-      'Company ID':
-        currentCompanyId,
-
-      'Name':
-        name,
-
-      'Designation':
-        document.getElementById(
-          'pDesignation'
-        ).value,
-
-      'Phone':
-        document.getElementById(
-          'pPhone'
-        ).value.trim(),
-
-      'Email':
-        document.getElementById(
-          'pEmail'
-        ).value.trim()
-
-    };
-
-
-    const file =
-      document.getElementById(
-        'pPhoto'
-      ).files[0];
-
-
-    let imageData =
-      null;
-
-
-    if (file) {
-
-      imageData =
-        await readImageFile(
-          file
-        );
-
-    }
-
-
-    if (editingPersonId) {
-
-      google.script.run
-
-        .withSuccessHandler(
-          function() {
-
-            closePersonForm();
-
-            showToast(
-              'Contact updated successfully.'
-            );
-
-            refreshCRM();
-
-          }
-        )
-
-        .withFailureHandler(
-          function(error) {
-
-            button.disabled =
-              false;
-
-            showError(error);
-
-          }
-        )
-
-        .updatePerson(
-          person,
-          imageData
-        );
-
-      return;
-
-    }
-
-
-    google.script.run
-
-      .withSuccessHandler(
-        function() {
-
-          closePersonForm();
-
-          showToast(
-            'Contact added successfully.'
-          );
-
-          refreshCRM();
-
-        }
-      )
-
-      .withFailureHandler(
-        function(error) {
-
-          button.disabled =
-            false;
-
-          showError(error);
-
-        }
-      )
-
-      .addPerson(
-        currentCompanyId,
-        person,
-        imageData
-      );
-
-  }
-
-  catch (error) {
-
-    button.disabled =
-      false;
-
-    showError(error);
-
-  }
-
-}
-
-
-/* =========================================================
-   DELETE PERSON
-========================================================= */
-
-function deletePerson(
-  personId
-) {
-
-  const person =
-    crmData.people
-      .find(function(item) {
-
-        return String(
-          item['ID']
-        ) === String(
-          personId
-        );
-
-      });
-
-  if (!person) {
-    return;
-  }
-
-
-  if (
-    !confirm(
-      'Delete contact "' +
-      person['Name'] +
-      '"?'
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      function() {
-
-        showToast(
-          'Contact deleted.'
-        );
-
-        refreshCRM();
-
-      }
-    )
-
-    .withFailureHandler(
-      showError
-    )
-
-    .deletePerson(
-      personId
-    );
-
-}
-
-
-/* =========================================================
-   REFRESH CRM
-========================================================= */
-
-function refreshCRM() {
+function loadDashboard() {
 
   showLoading();
 
   google.script.run
 
-    .withSuccessHandler(
-      function(data) {
+    .withSuccessHandler(function (data) {
 
-        crmData =
-          data || {
+      renderDashboard(data);
 
-            companies: [],
+    })
 
-            people: [],
+    .withFailureHandler(function (error) {
 
-            settings: {}
+      showError(error);
 
-          };
+    })
 
-        populateSettings();
-
-        renderCompanies();
-
-        hideLoading();
-
-
-        if (
-          currentCompanyId
-        ) {
-
-          openCompanyDetails(
-            currentCompanyId
-          );
-
-        }
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        hideLoading();
-
-        showError(error);
-
-      }
-    )
-
-    .getCRMData();
+    .getDashboardData();
 
 }
 
+
 /* =========================================================
-   PERSON DETAILS
+   RENDER DASHBOARD
 ========================================================= */
 
-function openPersonDetails(
-  personId
+function renderDashboard(data) {
+
+  const app =
+    document.getElementById('app');
+
+
+  app.innerHTML = `
+
+    <div class="page-header">
+
+      <h1 class="page-title">
+        Good Afternoon 👋
+      </h1>
+
+      <div class="page-description">
+        Your Cable Sales Product & Knowledge Hub
+      </div>
+
+    </div>
+
+
+    <div class="search-container">
+
+      <span class="search-icon">
+        🔍
+      </span>
+
+      <input
+        id="globalSearch"
+        class="search-box"
+        type="text"
+        placeholder="Search products, cables, industries..."
+        autocomplete="off"
+      >
+
+    </div>
+
+
+    <div class="dashboard-grid">
+
+      ${createDashboardCard(
+        '📦',
+        'Products',
+        data['Products'],
+        'Products'
+      )}
+
+      ${createDashboardCard(
+        '🔧',
+        'Applications',
+        data['Applications'],
+        'Applications'
+      )}
+
+      ${createDashboardCard(
+        '🏭',
+        'Industries',
+        data['Industries'],
+        'Industries'
+      )}
+
+      ${createDashboardCard(
+        '🥊',
+        'Competitors',
+        data['Competitors'],
+        'Competitors'
+      )}
+
+      ${createDashboardCard(
+        '📚',
+        'Cable Knowledge',
+        data['Cable Knowledge'],
+        'Cable Knowledge'
+      )}
+
+      ${createDashboardCard(
+        '🧠',
+        'Learning',
+        data['Learning'],
+        'Learning'
+      )}
+
+      ${createDashboardCard(
+        '🚀',
+        'Career Growth',
+        data['Career Growth'],
+        'Career Growth'
+      )}
+
+      ${createDashboardCard(
+        '📄',
+        'Documents',
+        data['Documents'],
+        'Documents'
+      )}
+
+    </div>
+
+
+    <div class="section">
+
+      <div class="section-title">
+        Quick Access
+      </div>
+
+      <div class="quick-grid">
+
+        ${createQuickButton('⚡ Special Cables')}
+
+        ${createQuickButton('🚆 Railway')}
+
+        ${createQuickButton('☀️ Solar')}
+
+        ${createQuickButton('🛢️ Oil & Gas')}
+
+        ${createQuickButton('🛡️ Defence')}
+
+        ${createQuickButton('🏭 Industrial')}
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  setupDashboardSearch();
+
+}
+
+
+/* =========================================================
+   DASHBOARD CARD
+========================================================= */
+
+function createDashboardCard(
+  icon,
+  title,
+  count,
+  section
 ) {
 
-  const person =
-    crmData.people
-      .find(function(item) {
+  return `
 
-        return String(
-          item['ID']
-        ) === String(
-          personId
-        );
+    <div
+      class="dashboard-card"
+      onclick="openSection('${section}')"
+    >
 
-      });
+      <div class="dashboard-icon">
+        ${icon}
+      </div>
 
-  if (!person) {
+      <div class="dashboard-title">
+        ${escapeHtml(title)}
+      </div>
+
+      <div class="dashboard-count">
+        ${Number(count) || 0}
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   QUICK BUTTON
+========================================================= */
+
+function createQuickButton(text) {
+
+  return `
+
+    <button
+      class="quick-button"
+      onclick="quickSearch('${escapeAttribute(text)}')"
+    >
+      ${escapeHtml(text)}
+    </button>
+
+  `;
+
+}
+
+
+/* =========================================================
+   GLOBAL SEARCH
+========================================================= */
+
+function setupDashboardSearch() {
+
+  const search =
+    document.getElementById('globalSearch');
+
+  if (!search) {
     return;
   }
 
 
-  const company =
-    crmData.companies
-      .find(function(item) {
+  search.addEventListener('keydown', function (event) {
 
-        return String(
-          item['ID']
-        ) === String(
-          person['Company ID']
-        );
-
-      });
+    if (event.key !== 'Enter') {
+      return;
+    }
 
 
-  const photo =
-    person.photoUrl || '';
-
-  const phone =
-    String(
-      person['Phone'] || ''
-    ).trim();
-
-  const email =
-    String(
-      person['Email'] || ''
-    ).trim();
+    const value =
+      search.value.trim();
 
 
-  let html =
-    '';
+    if (!value) {
+      return;
+    }
 
 
-  if (photo) {
+    searchProducts(value);
 
-    html +=
-
-      '<img ' +
-        'class="person-card-image-large" ' +
-        'src="' +
-          escapeAttr(photo) +
-        '" ' +
-        'alt=""' +
-      '>';
-
-  }
-
-
-  html +=
-
-    '<div class="person-detail-name">' +
-      escapeHtml(
-        person['Name']
-      ) +
-    '</div>';
-
-
-  html +=
-
-    '<div class="person-detail-company">' +
-
-      (
-        escapeHtml(
-          person['Designation']
-        ) ||
-        ''
-      ) +
-
-      (
-        company
-          ? (
-              ' • ' +
-              escapeHtml(
-                company['Company Name']
-              )
-            )
-          : ''
-      ) +
-
-    '</div>';
-
-
-  if (phone) {
-
-    html +=
-
-      '<div class="detail-row">' +
-
-        '<div class="detail-label">' +
-          'Phone' +
-        '</div>' +
-
-        '<div class="detail-value">' +
-          escapeHtml(phone) +
-        '</div>' +
-
-      '</div>';
-
-  }
-
-
-  if (email) {
-
-    html +=
-
-      '<div class="detail-row">' +
-
-        '<div class="detail-label">' +
-          'Email' +
-        '</div>' +
-
-        '<div class="detail-value">' +
-          escapeHtml(email) +
-        '</div>' +
-
-      '</div>';
-
-  }
-
-
-  html +=
-
-    '<div class="contact-actions">';
-
-
-  if (phone) {
-
-    html +=
-
-      '<a href="tel:' +
-        escapeAttr(phone) +
-      '">' +
-        '📞 Call' +
-      '</a>' +
-
-      '<a href="' +
-        escapeAttr(
-          makeWhatsAppUrl(
-            phone
-          )
-        ) +
-        '" target="_blank">' +
-        '💬 WhatsApp' +
-      '</a>';
-
-  }
-
-
-  if (email) {
-
-    html +=
-
-      '<a href="mailto:' +
-        escapeAttr(email) +
-      '">' +
-        '✉️ Email' +
-      '</a>';
-
-  }
-
-
-  if (
-    company &&
-    company['Website']
-  ) {
-
-    html +=
-
-      '<a href="' +
-        escapeAttr(
-          makeWebsiteUrl(
-            company['Website']
-          )
-        ) +
-        '" target="_blank">' +
-        '🌐 Website' +
-      '</a>';
-
-  }
-
-
-  html +=
-    '</div>';
-
-
-  document.getElementById(
-    'personDetailsContent'
-  ).innerHTML =
-    html;
-
-
-  showModal(
-    'personDetailsModal'
-  );
+  });
 
 }
 
 
 /* =========================================================
-   CLOSE MODALS
+   SEARCH PRODUCTS
 ========================================================= */
 
-function closeCompanyModal() {
+function searchProducts(searchText) {
 
-  hideModal(
-    'companyModal'
-  );
+  showLoading();
 
-  currentCompanyId =
-    null;
 
-}
+  google.script.run
 
+    .withSuccessHandler(function (products) {
 
-function closePersonDetails() {
+      const filtered =
+        filterRecords(products, searchText);
 
-  hideModal(
-    'personDetailsModal'
-  );
 
-}
-
-
-function closeCompanyForm() {
-
-  hideModal(
-    'companyFormModal'
-  );
-
-  editingCompanyId =
-    null;
-
-}
-
-
-function closePersonForm() {
-
-  hideModal(
-    'personFormModal'
-  );
-
-  editingPersonId =
-    null;
-
-}
-
-
-/* =========================================================
-   MODAL HELPERS
-========================================================= */
-
-function showModal(
-  id
-) {
-
-  document
-    .getElementById(id)
-    .classList.add('show');
-
-}
-
-
-function hideModal(
-  id
-) {
-
-  document
-    .getElementById(id)
-    .classList.remove('show');
-
-}
-
-
-/* =========================================================
-   FILE PREVIEW
-========================================================= */
-
-function previewFile(
-  input,
-  previewId
-) {
-
-  const file =
-    input.files[0];
-
-  const preview =
-    document.getElementById(
-      previewId
-    );
-
-
-  if (!file) {
-
-    preview.src =
-      '';
-
-    preview.style.display =
-      'none';
-
-    return;
-
-  }
-
-
-  const reader =
-    new FileReader();
-
-
-  reader.onload =
-    function(event) {
-
-      preview.src =
-        event.target.result;
-
-      preview.style.display =
-        'block';
-
-    };
-
-
-  reader.readAsDataURL(
-    file
-  );
-
-}
-
-
-/* =========================================================
-   READ / RESIZE IMAGE
-========================================================= */
-
-function readImageFile(
-  file
-) {
-
-  return new Promise(
-    function(resolve, reject) {
-
-      const reader =
-        new FileReader();
-
-
-      reader.onload =
-        function(event) {
-
-          const image =
-            new Image();
-
-
-          image.onload =
-            function() {
-
-              const maxSize =
-                1600;
-
-              let width =
-                image.width;
-
-              let height =
-                image.height;
-
-
-              if (
-                width > maxSize ||
-                height > maxSize
-              ) {
-
-                if (
-                  width > height
-                ) {
-
-                  height =
-                    Math.round(
-                      height *
-                      maxSize /
-                      width
-                    );
-
-                  width =
-                    maxSize;
-
-                } else {
-
-                  width =
-                    Math.round(
-                      width *
-                      maxSize /
-                      height
-                    );
-
-                  height =
-                    maxSize;
-
-                }
-
-              }
-
-
-              const canvas =
-                document.createElement(
-                  'canvas'
-                );
-
-              canvas.width =
-                width;
-
-              canvas.height =
-                height;
-
-
-              const context =
-                canvas.getContext(
-                  '2d'
-                );
-
-
-              context.drawImage(
-                image,
-                0,
-                0,
-                width,
-                height
-              );
-
-
-              const dataUrl =
-                canvas.toDataURL(
-                  'image/jpeg',
-                  0.88
-                );
-
-
-              resolve({
-
-                base64:
-                  dataUrl.split(',')[1],
-
-                mimeType:
-                  'image/jpeg'
-
-              });
-
-            };
-
-
-          image.onerror =
-            function() {
-
-              reject(
-                new Error(
-                  'Could not process image.'
-                )
-              );
-
-            };
-
-
-          image.src =
-            event.target.result;
-
-        };
-
-
-      reader.onerror =
-        function() {
-
-          reject(
-            new Error(
-              'Could not read image.'
-            )
-          );
-
-        };
-
-
-      reader.readAsDataURL(
-        file
+      renderSearchResults(
+        searchText,
+        filtered
       );
 
-    }
-  );
+    })
+
+    .withFailureHandler(function (error) {
+
+      showError(error);
+
+    })
+
+    .getProducts();
 
 }
 
 
 /* =========================================================
-   CLEAR FILE
+   FILTER RECORDS
 ========================================================= */
 
-function clearFile(
-  inputId,
-  previewId
+function filterRecords(
+  records,
+  searchText
 ) {
 
-  const input =
-    document.getElementById(
-      inputId
-    );
-
-  const preview =
-    document.getElementById(
-      previewId
-    );
+  const search =
+    String(searchText)
+      .toLowerCase()
+      .trim();
 
 
-  if (input) {
-
-    input.value =
-      '';
-
+  if (!search) {
+    return records;
   }
 
 
-  if (preview) {
+  return records.filter(function (record) {
 
-    preview.src =
-      '';
+    return Object.values(record)
+      .some(function (value) {
 
-    preview.style.display =
-      'none';
+        return String(value)
+          .toLowerCase()
+          .includes(search);
 
-  }
+      });
+
+  });
 
 }
 
 
 /* =========================================================
-   WEBSITE URL
+   SEARCH RESULTS
 ========================================================= */
 
-function makeWebsiteUrl(
-  website
+function renderSearchResults(
+  searchText,
+  records
 ) {
 
-  const value =
-    String(
-      website || ''
-    ).trim();
+  const app =
+    document.getElementById('app');
 
-  if (!value) {
+
+  let html = `
+
+    <div class="page-header">
+
+      <h1 class="page-title">
+        Search Results
+      </h1>
+
+      <div class="page-description">
+        Results for "${escapeHtml(searchText)}"
+      </div>
+
+    </div>
+
+  `;
+
+
+  if (!records.length) {
+
+    html += `
+
+      <div class="empty-state">
+
+        <div class="empty-icon">
+          🔍
+        </div>
+
+        <div class="empty-title">
+          No products found
+        </div>
+
+        <div>
+          Try another product name,
+          category, application or industry.
+        </div>
+
+      </div>
+
+    `;
+
+
+    app.innerHTML = html;
+
+    return;
+
+  }
+
+
+  html += createDataTable(records);
+
+
+  app.innerHTML = html;
+
+}
+
+
+/* =========================================================
+   LOAD SECTION
+========================================================= */
+
+function loadSection(section) {
+
+  showLoading();
+
+
+  google.script.run
+
+    .withSuccessHandler(function (data) {
+
+      renderSection(
+        section,
+        data
+      );
+
+    })
+
+    .withFailureHandler(function (error) {
+
+      showError(error);
+
+    })
+
+    .getSheetData(section);
+
+}
+
+
+/* =========================================================
+   RENDER SECTION
+========================================================= */
+
+function renderSection(
+  section,
+  data
+) {
+
+  const app =
+    document.getElementById('app');
+
+
+  let html = `
+
+    <div class="page-header">
+
+      <h1 class="page-title">
+        ${escapeHtml(section)}
+      </h1>
+
+      <div class="page-description">
+        ${data.length} records
+      </div>
+
+    </div>
+
+  `;
+
+
+  if (!data.length) {
+
+    html += `
+
+      <div class="empty-state">
+
+        <div class="empty-icon">
+          📭
+        </div>
+
+        <div class="empty-title">
+          No records yet
+        </div>
+
+        <div>
+          Add data to the
+          <b>${escapeHtml(section)}</b>
+          Google Sheet to see it here.
+        </div>
+
+      </div>
+
+    `;
+
+
+    app.innerHTML = html;
+
+    return;
+
+  }
+
+
+  html += createDataTable(data);
+
+
+  app.innerHTML = html;
+
+}
+
+
+/* =========================================================
+   DATA TABLE
+========================================================= */
+
+function createDataTable(data) {
+
+  if (!data || !data.length) {
     return '';
   }
 
+
+  const headers =
+    Object.keys(data[0]);
+
+
+  let html = `
+
+    <div class="table-container">
+
+      <table class="data-table">
+
+        <thead>
+
+          <tr>
+
+            ${headers.map(function (header) {
+
+              return `
+
+                <th>
+                  ${escapeHtml(header)}
+                </th>
+
+              `;
+
+            }).join('')}
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+  `;
+
+
+  data.forEach(function (record) {
+
+    html += '<tr>';
+
+
+    headers.forEach(function (header) {
+
+      html += `
+
+        <td>
+          ${formatCell(record[header])}
+        </td>
+
+      `;
+
+    });
+
+
+    html += '</tr>';
+
+  });
+
+
+  html += `
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  `;
+
+
+  return html;
+
+}
+
+
+/* =========================================================
+   FORMAT CELL
+========================================================= */
+
+function formatCell(value) {
+
   if (
-    /^https?:\/\//i.test(value)
+    value === null ||
+    value === undefined
   ) {
 
-    return value;
+    return '';
 
   }
 
-  return (
-    'https://' +
-    value
-  );
-
-}
-
-
-/* =========================================================
-   WHATSAPP URL
-========================================================= */
-
-function makeWhatsAppUrl(
-  phone
-) {
-
-  let digits =
-    String(
-      phone || ''
-    )
-      .replace(
-        /\D/g,
-        ''
-      );
-
-
-  if (
-    digits.length === 10
-  ) {
-
-    digits =
-      '91' +
-      digits;
-
-  }
-
-
-  return (
-    'https://wa.me/' +
-    digits
-  );
-
-}
-
-
-/* =========================================================
-   NORMALIZE
-========================================================= */
-
-function normalize(
-  value
-) {
-
-  return String(
-    value || ''
-  )
-    .trim()
-    .toLowerCase();
-
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value || ''
-  )
-    .replace(
-      /&/g,
-      '&amp;'
-    )
-    .replace(
-      /</g,
-      '&lt;'
-    )
-    .replace(
-      />/g,
-      '&gt;'
-    )
-    .replace(
-      /"/g,
-      '&quot;'
-    )
-    .replace(
-      /'/g,
-      '&#039;'
-    );
-
-}
-
-
-function escapeAttr(
-  value
-) {
 
   return escapeHtml(
-    value
-  );
+    String(value)
+  ).replace(/\n/g, '<br>');
+
+}
+
+
+/* =========================================================
+   OPEN SECTION
+========================================================= */
+
+function openSection(section) {
+
+  const buttons =
+    document.querySelectorAll('.nav-item');
+
+
+  buttons.forEach(function (button) {
+
+    if (
+      button.getAttribute('data-section') === section
+    ) {
+
+      setActiveNavigation(button);
+
+    }
+
+  });
+
+
+  loadSection(section);
+
+}
+
+
+/* =========================================================
+   QUICK SEARCH
+========================================================= */
+
+function quickSearch(text) {
+
+  const cleanText =
+    text
+      .replace(/[^\w\s&-]/g, '')
+      .trim();
+
+
+  const search =
+    document.getElementById('globalSearch');
+
+
+  if (search) {
+
+    search.value = cleanText;
+
+    searchProducts(cleanText);
+
+  }
+
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+function showLoading() {
+
+  const app =
+    document.getElementById('app');
+
+
+  app.innerHTML = `
+
+    <div class="loading">
+      Loading...
+    </div>
+
+  `;
 
 }
 
@@ -4223,101 +765,76 @@ function escapeAttr(
    ERROR
 ========================================================= */
 
-function showError(
-  error
-) {
+function showError(error) {
+
+  const app =
+    document.getElementById('app');
+
 
   const message =
-    error &&
-    error.message
+    error && error.message
       ? error.message
       : String(error);
 
 
-  console.error(
-    error
-  );
+  app.innerHTML = `
 
+    <div class="error-box">
 
-  alert(
-    message
-  );
+      <div class="error-title">
+        Something went wrong
+      </div>
+
+      <div>
+        ${escapeHtml(message)}
+      </div>
+
+    </div>
+
+  `;
 
 }
 
 
 /* =========================================================
-   TOAST
+   HTML ESCAPE
 ========================================================= */
 
-function showToast(
-  message
-) {
+function escapeHtml(value) {
 
-  const toast =
-    document.getElementById(
-      'toast'
-    );
+  if (
+    value === null ||
+    value === undefined
+  ) {
 
+    return '';
 
-  toast.textContent =
-    message;
+  }
 
 
-  toast.classList.add(
-    'show'
-  );
+  return String(value)
 
+    .replace(/&/g, '&amp;')
 
-  setTimeout(
-    function() {
+    .replace(/</g, '&lt;')
 
-      toast.classList.remove(
-        'show'
-      );
+    .replace(/>/g, '&gt;')
 
-    },
-    2200
-  );
+    .replace(/"/g, '&quot;')
+
+    .replace(/'/g, '&#039;');
 
 }
+
 
 /* =========================================================
-   LOADING SCREEN
+   ATTRIBUTE ESCAPE
 ========================================================= */
 
-function showLoading() {
+function escapeAttribute(value) {
 
-  const overlay =
-    document.getElementById(
-      'loadingOverlay'
-    );
-
-  if (overlay) {
-
-    overlay.classList.remove(
-      'hidden'
-    );
-
-  }
-
-}
-
-
-function hideLoading() {
-
-  const overlay =
-    document.getElementById(
-      'loadingOverlay'
-    );
-
-  if (overlay) {
-
-    overlay.classList.add(
-      'hidden'
-    );
-
-  }
+  return escapeHtml(value)
+    .replace(/`/g, '&#096;');
 
 }
 
