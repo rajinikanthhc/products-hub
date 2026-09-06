@@ -718,3 +718,331 @@ function deleteProduct(productId) {
   };
 
 }
+
+/* =========================================================
+   ADD APPLICATION
+========================================================= */
+
+function addApplication(application) {
+
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName('Applications');
+
+  if (!sheet) {
+    throw new Error('Applications sheet not found.');
+  }
+
+  const lastColumn = sheet.getLastColumn();
+
+  if (lastColumn === 0) {
+    throw new Error('Applications sheet has no headers.');
+  }
+
+  const headers = sheet
+    .getRange(1, 1, 1, lastColumn)
+    .getValues()[0];
+
+  const row = headers.map(function(header) {
+
+    switch (String(header).trim()) {
+
+      case 'Application':
+        return application.application || '';
+
+      case 'Industry':
+        return application.industry || '';
+
+      case 'Process / Area':
+        return application.processArea || '';
+
+      case 'Cable Required':
+        return application.cableRequired || '';
+
+      case 'Why Cable Is Required':
+        return application.whyCableRequired || '';
+
+      case 'Customer Type':
+        return application.customerType || '';
+
+      case 'Typical Buyer':
+        return application.typicalBuyer || '';
+
+      case 'Customer Requirement':
+        return application.customerRequirement || '';
+
+      case 'Opportunity Identification':
+        return application.opportunityIdentification || '';
+
+      case 'Questions to Ask':
+        return application.questionsToAsk || '';
+
+      case 'Key Selling Points':
+        return application.keySellingPoints || '';
+
+      case 'Technical Considerations':
+        return application.technicalConsiderations || '';
+
+      case 'Common Objections':
+        return application.commonObjections || '';
+
+      case 'Objection Answer':
+        return application.objectionAnswer || '';
+
+      case 'Related Products':
+        return application.relatedProducts || '';
+
+      case 'Status':
+        return application.status || 'Active';
+
+      case 'Last Updated':
+        return new Date();
+
+      default:
+        return '';
+    }
+
+  });
+
+  sheet
+    .getRange(
+      sheet.getLastRow() + 1,
+      1,
+      1,
+      row.length
+    )
+    .setValues([row]);
+
+  return {
+    success: true,
+    application: application.application || ''
+  };
+}
+
+
+/* =========================================================
+   UPDATE APPLICATION
+========================================================= */
+
+function updateApplication(applicationName, application) {
+
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName('Applications');
+
+  if (!sheet) {
+    throw new Error('Applications sheet not found.');
+  }
+
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+
+  if (lastRow < 2) {
+    throw new Error('No applications found.');
+  }
+
+  const headers = sheet
+    .getRange(1, 1, 1, lastColumn)
+    .getDisplayValues()[0];
+
+  const applicationColumn =
+    headers.findIndex(function(header) {
+      return String(header).trim() === 'Application';
+    });
+
+  if (applicationColumn === -1) {
+    throw new Error(
+      'Application column not found.'
+    );
+  }
+
+  const values = sheet
+    .getRange(
+      2,
+      applicationColumn + 1,
+      lastRow - 1,
+      1
+    )
+    .getDisplayValues();
+
+  let targetRow = -1;
+
+  values.forEach(function(row, index) {
+
+    if (
+      String(row[0]).trim() ===
+      String(applicationName).trim()
+    ) {
+
+      targetRow = index + 2;
+
+    }
+
+  });
+
+  if (targetRow === -1) {
+    throw new Error(
+      'Application not found: ' +
+      applicationName
+    );
+  }
+
+  const existingRow =
+    sheet
+      .getRange(
+        targetRow,
+        1,
+        1,
+        lastColumn
+      )
+      .getValues()[0];
+
+  const row = headers.map(function(header, index) {
+
+    switch (String(header).trim()) {
+
+      case 'Application':
+        return application.application || '';
+
+      case 'Industry':
+        return application.industry || '';
+
+      case 'Process / Area':
+        return application.processArea || '';
+
+      case 'Cable Required':
+        return application.cableRequired || '';
+
+      case 'Why Cable Is Required':
+        return application.whyCableRequired || '';
+
+      case 'Customer Type':
+        return application.customerType || '';
+
+      case 'Typical Buyer':
+        return application.typicalBuyer || '';
+
+      case 'Customer Requirement':
+        return application.customerRequirement || '';
+
+      case 'Opportunity Identification':
+        return application.opportunityIdentification || '';
+
+      case 'Questions to Ask':
+        return application.questionsToAsk || '';
+
+      case 'Key Selling Points':
+        return application.keySellingPoints || '';
+
+      case 'Technical Considerations':
+        return application.technicalConsiderations || '';
+
+      case 'Common Objections':
+        return application.commonObjections || '';
+
+      case 'Objection Answer':
+        return application.objectionAnswer || '';
+
+      case 'Related Products':
+        return application.relatedProducts || '';
+
+      case 'Status':
+        return application.status || 'Active';
+
+      case 'Last Updated':
+        return new Date();
+
+      default:
+        return existingRow[index];
+    }
+
+  });
+
+  sheet
+    .getRange(
+      targetRow,
+      1,
+      1,
+      row.length
+    )
+    .setValues([row]);
+
+  return {
+    success: true,
+    application:
+      application.application || ''
+  };
+}
+
+
+/* =========================================================
+   DELETE APPLICATION
+========================================================= */
+
+function deleteApplication(applicationName) {
+
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName('Applications');
+
+  if (!sheet) {
+    throw new Error('Applications sheet not found.');
+  }
+
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+
+  if (lastRow < 2) {
+    throw new Error('No applications found.');
+  }
+
+  const headers = sheet
+    .getRange(1, 1, 1, lastColumn)
+    .getDisplayValues()[0];
+
+  const applicationColumn =
+    headers.findIndex(function(header) {
+      return String(header).trim() === 'Application';
+    });
+
+  if (applicationColumn === -1) {
+    throw new Error(
+      'Application column not found.'
+    );
+  }
+
+  const values = sheet
+    .getRange(
+      2,
+      applicationColumn + 1,
+      lastRow - 1,
+      1
+    )
+    .getDisplayValues();
+
+  let targetRow = -1;
+
+  values.forEach(function(row, index) {
+
+    if (
+      String(row[0]).trim() ===
+      String(applicationName).trim()
+    ) {
+
+      targetRow = index + 2;
+
+    }
+
+  });
+
+  if (targetRow === -1) {
+    throw new Error(
+      'Application not found: ' +
+      applicationName
+    );
+  }
+
+  sheet.deleteRow(targetRow);
+
+  return {
+    success: true,
+    application: applicationName
+  };
+}

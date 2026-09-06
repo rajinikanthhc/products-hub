@@ -527,6 +527,18 @@ function renderSection(section, data) {
 
   }
 
+  /* =======================================================
+   APPLICATIONS
+======================================================= */
+
+if (section === 'Applications') {
+
+  renderApplicationsPage(data);
+
+  return;
+
+}
+
 
   /* =======================================================
      OTHER SECTIONS
@@ -1766,6 +1778,11 @@ function openAddProductModal() {
 
         <div class="form-grid">
 
+        <div class="form-section-title full">
+  <span>📦</span>
+  Basic Product Information
+</div>
+
 
           <div class="form-group full">
 
@@ -1887,6 +1904,10 @@ function openAddProductModal() {
 
           </div>
 
+<div class="form-section-title full">
+  <span>⚙️</span>
+  Technical Information
+</div>
 
           <div class="form-group full">
 
@@ -1902,6 +1923,10 @@ function openAddProductModal() {
 
           </div>
 
+<div class="form-section-title full">
+  <span>💼</span>
+  Sales Knowledge
+</div>
 
           <div class="form-group full">
 
@@ -1977,6 +2002,10 @@ function openAddProductModal() {
 
           </div>
 
+<div class="form-section-title full">
+  <span>📄</span>
+  Documents & Media
+</div>
 
           <div class="form-group">
 
@@ -2319,6 +2348,7 @@ function editProduct(productId) {
 
 /* =========================================================
    OPEN EDIT PRODUCT MODAL
+   Same layout as Add Product
 ========================================================= */
 
 function openEditProductModal(product) {
@@ -2349,6 +2379,10 @@ function openEditProductModal(product) {
 
     <div class="modal">
 
+      <!-- =========================================
+           HEADER
+      ========================================== -->
+
       <div class="modal-header">
 
         <div>
@@ -2376,15 +2410,30 @@ function openEditProductModal(product) {
       </div>
 
 
+      <!-- =========================================
+           FORM
+      ========================================== -->
+
       <form
-  id="editProductForm"
-  data-product-id="${escapeAttribute(
-    product['Product ID'] || ''
-  )}"
-  onsubmit="submitProductEdit(event)"
->
+        id="editProductForm"
+        data-product-id="${escapeAttribute(
+          product['Product ID'] || ''
+        )}"
+        onsubmit="submitProductEdit(event)"
+      >
+
 
         <div class="form-grid">
+
+
+          <!-- =====================================
+               BASIC PRODUCT INFORMATION
+          ====================================== -->
+
+          <div class="form-section-title full">
+            <span>📦</span>
+            Basic Product Information
+          </div>
 
 
           <div class="form-group full">
@@ -2407,7 +2456,9 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Category</label>
+            <label>
+              Category
+            </label>
 
             <input
               type="text"
@@ -2422,7 +2473,9 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Sub Category</label>
+            <label>
+              Sub Category
+            </label>
 
             <input
               type="text"
@@ -2437,7 +2490,9 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Application</label>
+            <label>
+              Application
+            </label>
 
             <input
               type="text"
@@ -2452,7 +2507,9 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Industry</label>
+            <label>
+              Industry
+            </label>
 
             <input
               type="text"
@@ -2465,9 +2522,21 @@ function openEditProductModal(product) {
           </div>
 
 
+          <!-- =====================================
+               TECHNICAL INFORMATION
+          ====================================== -->
+
+          <div class="form-section-title full">
+            <span>⚙️</span>
+            Technical Information
+          </div>
+
+
           <div class="form-group">
 
-            <label>Voltage</label>
+            <label>
+              Voltage
+            </label>
 
             <input
               type="text"
@@ -2482,7 +2551,9 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Size Range</label>
+            <label>
+              Size Range
+            </label>
 
             <input
               type="text"
@@ -2497,7 +2568,9 @@ function openEditProductModal(product) {
 
           <div class="form-group full">
 
-            <label>Standard</label>
+            <label>
+              Standard
+            </label>
 
             <input
               type="text"
@@ -2512,11 +2585,14 @@ function openEditProductModal(product) {
 
           <div class="form-group full">
 
-            <label>Key Features</label>
+            <label>
+              Key Features
+            </label>
 
             <textarea
               name="keyFeatures"
               rows="3"
+              placeholder="Important technical features"
             >${escapeHtml(
               product['Key Features'] || ''
             )}</textarea>
@@ -2526,21 +2602,36 @@ function openEditProductModal(product) {
 
           <div class="form-group full">
 
-            <label>Sales Points</label>
+            <label>
+              Technical Notes
+            </label>
 
             <textarea
-              name="salesPoints"
+              name="technicalNotes"
               rows="3"
+              placeholder="Additional technical information"
             >${escapeHtml(
-              product['Sales Points'] || ''
+              product['Technical Notes'] || ''
             )}</textarea>
 
           </div>
 
 
+          <!-- =====================================
+               SALES KNOWLEDGE
+          ====================================== -->
+
+          <div class="form-section-title full">
+            <span>💼</span>
+            Sales Knowledge
+          </div>
+
+
           <div class="form-group">
 
-            <label>Customer Type</label>
+            <label>
+              Customer Type
+            </label>
 
             <input
               type="text"
@@ -2555,7 +2646,9 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Competitors</label>
+            <label>
+              Competitors
+            </label>
 
             <input
               type="text"
@@ -2570,13 +2663,16 @@ function openEditProductModal(product) {
 
           <div class="form-group full">
 
-            <label>Product Advantage</label>
+            <label>
+              Sales Points
+            </label>
 
             <textarea
-              name="productAdvantage"
+              name="salesPoints"
               rows="3"
+              placeholder="What should the salesperson highlight?"
             >${escapeHtml(
-              product['Product Advantage'] || ''
+              product['Sales Points'] || ''
             )}</textarea>
 
           </div>
@@ -2584,25 +2680,41 @@ function openEditProductModal(product) {
 
           <div class="form-group full">
 
-            <label>Technical Notes</label>
+            <label>
+              Product Advantage
+            </label>
 
             <textarea
-              name="technicalNotes"
+              name="productAdvantage"
               rows="3"
+              placeholder="Why should the customer choose this product?"
             >${escapeHtml(
-              product['Technical Notes'] || ''
+              product['Product Advantage'] || ''
             )}</textarea>
 
           </div>
 
 
+          <!-- =====================================
+               DOCUMENTS & MEDIA
+          ====================================== -->
+
+          <div class="form-section-title full">
+            <span>📄</span>
+            Documents & Media
+          </div>
+
+
           <div class="form-group">
 
-            <label>Datasheet Link</label>
+            <label>
+              Datasheet Link
+            </label>
 
             <input
               type="url"
               name="datasheet"
+              placeholder="https://..."
               value="${escapeAttribute(
                 product['Datasheet'] || ''
               )}"
@@ -2613,11 +2725,14 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Catalogue Link</label>
+            <label>
+              Catalogue Link
+            </label>
 
             <input
               type="url"
               name="catalogue"
+              placeholder="https://..."
               value="${escapeAttribute(
                 product['Catalogue'] || ''
               )}"
@@ -2628,11 +2743,14 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Image Link</label>
+            <label>
+              Image Link
+            </label>
 
             <input
               type="url"
               name="image"
+              placeholder="https://..."
               value="${escapeAttribute(
                 product['Image'] || ''
               )}"
@@ -2643,14 +2761,18 @@ function openEditProductModal(product) {
 
           <div class="form-group">
 
-            <label>Status</label>
+            <label>
+              Status
+            </label>
 
             <select name="status">
 
               <option
                 value="Active"
                 ${
-                  product['Status'] === 'Active'
+                  String(
+                    product['Status'] || 'Active'
+                  ) === 'Active'
                     ? 'selected'
                     : ''
                 }
@@ -2658,10 +2780,13 @@ function openEditProductModal(product) {
                 Active
               </option>
 
+
               <option
                 value="Inactive"
                 ${
-                  product['Status'] === 'Inactive'
+                  String(
+                    product['Status'] || ''
+                  ) === 'Inactive'
                     ? 'selected'
                     : ''
                 }
@@ -2676,6 +2801,10 @@ function openEditProductModal(product) {
 
         </div>
 
+
+        <!-- =========================================
+             FOOTER
+        ========================================== -->
 
         <div class="modal-footer">
 
@@ -2697,6 +2826,7 @@ function openEditProductModal(product) {
           </button>
 
         </div>
+
 
       </form>
 
@@ -2973,6 +3103,2104 @@ function submitProductEdit(event) {
     .updateProduct(
       currentProductId,
       product
+    );
+
+}
+
+/* =========================================================
+   APPLICATIONS PAGE
+========================================================= */
+
+function renderApplicationsPage(applications) {
+
+  const app =
+    document.getElementById('app');
+
+
+  const industries =
+    getUniqueValues(
+      applications,
+      'Industry'
+    );
+
+
+  const cables =
+    getUniqueValues(
+      applications,
+      'Cable Required'
+    );
+
+
+  app.innerHTML = `
+
+    <div class="page-header section-header">
+
+      <div>
+
+        <h1 class="page-title">
+          Applications
+        </h1>
+
+        <div class="page-description">
+          ${applications.length}
+          application${applications.length === 1 ? '' : 's'}
+        </div>
+
+      </div>
+
+
+      <button
+        class="primary-button"
+        onclick="openAddApplicationModal()"
+      >
+        + Add Application
+      </button>
+
+    </div>
+
+
+    <div class="application-toolbar">
+
+      <div class="application-search">
+
+        <span class="search-icon">
+          🔍
+        </span>
+
+        <input
+          id="applicationSearch"
+          class="search-box"
+          type="text"
+          placeholder="Search applications..."
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <select
+        id="applicationIndustryFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Industries
+        </option>
+
+        ${industries.map(function(value) {
+
+          return `
+            <option value="${escapeAttribute(value)}">
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+
+      <select
+        id="applicationCableFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Cables
+        </option>
+
+        ${cables.map(function(value) {
+
+          return `
+            <option value="${escapeAttribute(value)}">
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+    </div>
+
+
+    <div
+      id="applicationResults"
+      class="applications-grid"
+    ></div>
+
+  `;
+
+
+  window.applicationsData =
+    applications;
+
+
+  renderApplicationCards(
+    applications
+  );
+
+
+  setupApplicationFilters();
+
+}
+
+
+/* =========================================================
+   APPLICATION FILTERS
+========================================================= */
+
+function setupApplicationFilters() {
+
+  const search =
+    document.getElementById(
+      'applicationSearch'
+    );
+
+  const industry =
+    document.getElementById(
+      'applicationIndustryFilter'
+    );
+
+  const cable =
+    document.getElementById(
+      'applicationCableFilter'
+    );
+
+
+  function applyFilters() {
+
+    const searchText =
+      search.value
+        .trim()
+        .toLowerCase();
+
+    const industryValue =
+      industry.value
+        .trim()
+        .toLowerCase();
+
+    const cableValue =
+      cable.value
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+      window.applicationsData.filter(
+        function(application) {
+
+          const searchable =
+            Object.values(application)
+              .join(' ')
+              .toLowerCase();
+
+
+          const matchesSearch =
+            !searchText ||
+            searchable.includes(searchText);
+
+
+          const matchesIndustry =
+            !industryValue ||
+            String(
+              application['Industry'] || ''
+            )
+              .toLowerCase() ===
+              industryValue;
+
+
+          const matchesCable =
+            !cableValue ||
+            String(
+              application['Cable Required'] || ''
+            )
+              .toLowerCase() ===
+              cableValue;
+
+
+          return (
+            matchesSearch &&
+            matchesIndustry &&
+            matchesCable
+          );
+
+        }
+      );
+
+
+    renderApplicationCards(
+      filtered
+    );
+
+  }
+
+
+  search.addEventListener(
+    'input',
+    applyFilters
+  );
+
+  industry.addEventListener(
+    'change',
+    applyFilters
+  );
+
+  cable.addEventListener(
+    'change',
+    applyFilters
+  );
+
+}
+
+
+/* =========================================================
+   APPLICATION CARDS
+========================================================= */
+
+function renderApplicationCards(
+  applications
+) {
+
+  const container =
+    document.getElementById(
+      'applicationResults'
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!applications.length) {
+
+    container.innerHTML = `
+
+      <div class="empty-state application-empty">
+
+        <div class="empty-icon">
+          🔍
+        </div>
+
+        <div class="empty-title">
+          No applications found
+        </div>
+
+        <div>
+          Try changing your search or filters.
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    applications.map(
+      function(application) {
+
+        return createApplicationCard(
+          application
+        );
+
+      }
+    ).join('');
+
+}
+
+
+/* =========================================================
+   APPLICATION CARD
+========================================================= */
+
+function createApplicationCard(
+  application
+) {
+
+  const applicationName =
+    application['Application'] ||
+    'Unnamed Application';
+
+  const industry =
+    application['Industry'] || '';
+
+  const processArea =
+    application['Process / Area'] || '';
+
+  const cableRequired =
+    application['Cable Required'] || '';
+
+  const customerType =
+    application['Customer Type'] || '';
+
+  const typicalBuyer =
+    application['Typical Buyer'] || '';
+
+  const requirement =
+    application['Customer Requirement'] || '';
+
+  const status =
+    application['Status'] ||
+    'Active';
+
+
+  return `
+
+    <div class="application-card">
+
+
+      <div class="application-card-top">
+
+        <div class="application-icon">
+          🔧
+        </div>
+
+
+        <div class="application-status">
+          ${escapeHtml(status)}
+        </div>
+
+      </div>
+
+
+      <div class="application-name">
+        ${escapeHtml(applicationName)}
+      </div>
+
+
+      <div class="application-industry">
+        ${escapeHtml(industry)}
+      </div>
+
+
+      <div class="application-info-list">
+
+        ${
+          cableRequired
+            ? `
+              <div>
+
+                <span>
+                  Cable
+                </span>
+
+                <b>
+                  ${escapeHtml(cableRequired)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          processArea
+            ? `
+              <div>
+
+                <span>
+                  Process
+                </span>
+
+                <b>
+                  ${escapeHtml(processArea)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          customerType
+            ? `
+              <div>
+
+                <span>
+                  Customer
+                </span>
+
+                <b>
+                  ${escapeHtml(customerType)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          typicalBuyer
+            ? `
+              <div>
+
+                <span>
+                  Buyer
+                </span>
+
+                <b>
+                  ${escapeHtml(typicalBuyer)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+      </div>
+
+
+      ${
+        requirement
+          ? `
+            <div class="application-requirement">
+
+              ${escapeHtml(
+                requirement
+              )}
+
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="application-card-footer">
+
+        <button
+          class="view-product-button"
+          onclick="viewApplication(
+            '${escapeAttribute(applicationName)}'
+          )"
+        >
+          View Details →
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   VIEW APPLICATION
+========================================================= */
+
+function viewApplication(
+  applicationName
+) {
+
+  const application =
+    (window.applicationsData || [])
+      .find(function(item) {
+
+        return String(
+          item['Application'] || ''
+        ) ===
+        String(applicationName);
+
+      });
+
+
+  if (!application) {
+
+    alert('Application not found.');
+
+    return;
+
+  }
+
+
+  openApplicationDetails(
+    application
+  );
+
+}
+
+
+/* =========================================================
+   APPLICATION DETAILS
+========================================================= */
+
+function openApplicationDetails(
+  application
+) {
+
+  const old =
+    document.getElementById(
+      'applicationDetailsModal'
+    );
+
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+
+  modal.id =
+    'applicationDetailsModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  const applicationName =
+    application['Application'] ||
+    'Application Details';
+
+
+  modal.innerHTML = `
+
+    <div class="modal application-details-modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            ${escapeHtml(applicationName)}
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(
+              application['Industry'] || ''
+            )}
+          </div>
+
+        </div>
+
+
+        <div class="application-detail-actions">
+
+          <button
+            class="edit-product-button"
+            onclick="editApplication(
+              '${escapeAttribute(applicationName)}'
+            )"
+          >
+            ✏️ Edit
+          </button>
+
+
+          <button
+            class="delete-product-button"
+            onclick="confirmDeleteApplication(
+              '${escapeAttribute(applicationName)}'
+            )"
+          >
+            🗑️ Delete
+          </button>
+
+
+          <button
+            class="modal-close"
+            onclick="closeApplicationDetails()"
+          >
+            ×
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="application-details-body">
+
+
+        ${createApplicationDetailSection(
+          'Application Overview',
+          [
+            [
+              'Application',
+              application['Application']
+            ],
+            [
+              'Industry',
+              application['Industry']
+            ],
+            [
+              'Process / Area',
+              application['Process / Area']
+            ],
+            [
+              'Cable Required',
+              application['Cable Required']
+            ]
+          ]
+        )}
+
+
+        ${createApplicationDetailSection(
+          'Customer & Buying',
+          [
+            [
+              'Why Cable Is Required',
+              application['Why Cable Is Required']
+            ],
+            [
+              'Customer Type',
+              application['Customer Type']
+            ],
+            [
+              'Typical Buyer',
+              application['Typical Buyer']
+            ],
+            [
+              'Customer Requirement',
+              application['Customer Requirement']
+            ]
+          ]
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Opportunity Identification',
+          application[
+            'Opportunity Identification'
+          ]
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Questions to Ask',
+          application[
+            'Questions to Ask'
+          ]
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Key Selling Points',
+          application[
+            'Key Selling Points'
+          ]
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Technical Considerations',
+          application[
+            'Technical Considerations'
+          ]
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Common Objections',
+          application[
+            'Common Objections'
+          ]
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Objection Answer',
+          application[
+            'Objection Answer'
+          ]
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Related Products',
+          application[
+            'Related Products'
+          ]
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Status',
+          application['Status']
+        )}
+
+
+        ${createApplicationDetailTextSection(
+          'Last Updated',
+          application['Last Updated']
+        )}
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   APPLICATION DETAIL SECTION
+========================================================= */
+
+function createApplicationDetailSection(
+  title,
+  fields
+) {
+
+  const validFields =
+    fields.filter(function(field) {
+
+      return String(
+        field[1] || ''
+      ).trim() !== '';
+
+    });
+
+
+  if (!validFields.length) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+
+      <div class="detail-grid">
+
+        ${validFields.map(
+          function(field) {
+
+            return `
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  ${escapeHtml(field[0])}
+                </div>
+
+                <div class="detail-value">
+                  ${formatCell(field[1])}
+                </div>
+
+              </div>
+
+            `;
+
+          }
+        ).join('')}
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   APPLICATION DETAIL TEXT
+========================================================= */
+
+function createApplicationDetailTextSection(
+  title,
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    String(value).trim() === ''
+  ) {
+
+    return '';
+
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+      <div class="detail-text">
+        ${formatCell(value)}
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   CLOSE APPLICATION DETAILS
+========================================================= */
+
+function closeApplicationDetails() {
+
+  const modal =
+    document.getElementById(
+      'applicationDetailsModal'
+    );
+
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   ADD APPLICATION MODAL
+========================================================= */
+
+function openAddApplicationModal() {
+
+  const existing =
+    document.getElementById(
+      'applicationModal'
+    );
+
+
+  if (existing) {
+    existing.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+
+  modal.id =
+    'applicationModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Add Application
+          </div>
+
+          <div class="modal-subtitle">
+            Add a new sales application
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeApplicationModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="addApplicationForm"
+        onsubmit="submitApplication(event)"
+      >
+
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+
+            <span>🔧</span>
+            Basic Application Information
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Application *
+            </label>
+
+            <input
+              type="text"
+              name="application"
+              required
+              placeholder="Enter application"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Industry
+            </label>
+
+            <input
+              type="text"
+              name="industry"
+              placeholder="Oil & Gas, Cement, Railway..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Process / Area
+            </label>
+
+            <input
+              type="text"
+              name="processArea"
+              placeholder="Process area or equipment"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Cable Required
+            </label>
+
+            <input
+              type="text"
+              name="cableRequired"
+              placeholder="Instrumentation Cable..."
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>👥</span>
+            Customer & Sales Knowledge
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Why Cable Is Required
+            </label>
+
+            <textarea
+              name="whyCableRequired"
+              rows="3"
+              placeholder="Why is this cable required?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Customer Type
+            </label>
+
+            <input
+              type="text"
+              name="customerType"
+              placeholder="EPC, OEM, Contractor..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Typical Buyer
+            </label>
+
+            <input
+              type="text"
+              name="typicalBuyer"
+              placeholder="Engineer, Purchase Manager..."
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Customer Requirement
+            </label>
+
+            <textarea
+              name="customerRequirement"
+              rows="3"
+              placeholder="What does the customer require?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>🎯</span>
+            Opportunity & Selling
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Opportunity Identification
+            </label>
+
+            <textarea
+              name="opportunityIdentification"
+              rows="3"
+              placeholder="How can a salesperson identify this opportunity?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Questions to Ask
+            </label>
+
+            <textarea
+              name="questionsToAsk"
+              rows="4"
+              placeholder="What questions should you ask the customer?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Selling Points
+            </label>
+
+            <textarea
+              name="keySellingPoints"
+              rows="3"
+              placeholder="What should you highlight?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>⚙️</span>
+            Technical & Objection Handling
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Technical Considerations
+            </label>
+
+            <textarea
+              name="technicalConsiderations"
+              rows="3"
+              placeholder="Important technical considerations"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Common Objections
+            </label>
+
+            <textarea
+              name="commonObjections"
+              rows="3"
+              placeholder="What objections may the customer raise?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Objection Answer
+            </label>
+
+            <textarea
+              name="objectionAnswer"
+              rows="3"
+              placeholder="How should the salesperson answer?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              placeholder="Instrumentation; Control..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option value="Active">
+                Active
+              </option>
+
+              <option value="Inactive">
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeApplicationModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="saveApplicationButton"
+          >
+            Save Application
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+
+  setTimeout(function() {
+
+    const input =
+      modal.querySelector(
+        'input[name="application"]'
+      );
+
+    if (input) {
+      input.focus();
+    }
+
+  }, 50);
+
+}
+
+
+/* =========================================================
+   CLOSE APPLICATION MODAL
+========================================================= */
+
+function closeApplicationModal() {
+
+  const modal =
+    document.getElementById(
+      'applicationModal'
+    );
+
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT APPLICATION
+========================================================= */
+
+function submitApplication(event) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'addApplicationForm'
+    );
+
+
+  const button =
+    document.getElementById(
+      'saveApplicationButton'
+    );
+
+
+  const formData =
+    new FormData(form);
+
+
+  const application = {
+
+    application:
+      formData.get('application'),
+
+    industry:
+      formData.get('industry'),
+
+    processArea:
+      formData.get('processArea'),
+
+    cableRequired:
+      formData.get('cableRequired'),
+
+    whyCableRequired:
+      formData.get('whyCableRequired'),
+
+    customerType:
+      formData.get('customerType'),
+
+    typicalBuyer:
+      formData.get('typicalBuyer'),
+
+    customerRequirement:
+      formData.get('customerRequirement'),
+
+    opportunityIdentification:
+      formData.get('opportunityIdentification'),
+
+    questionsToAsk:
+      formData.get('questionsToAsk'),
+
+    keySellingPoints:
+      formData.get('keySellingPoints'),
+
+    technicalConsiderations:
+      formData.get('technicalConsiderations'),
+
+    commonObjections:
+      formData.get('commonObjections'),
+
+    objectionAnswer:
+      formData.get('objectionAnswer'),
+
+    relatedProducts:
+      formData.get('relatedProducts'),
+
+    status:
+      formData.get('status')
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeApplicationModal();
+
+
+      showSuccessMessage(
+        'Application "' +
+        result.application +
+        '" added successfully.'
+      );
+
+
+      loadSection('Applications');
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Application';
+
+
+      alert(
+        error.message ||
+        'Unable to save application.'
+      );
+
+    })
+
+    .addApplication(application);
+
+}
+
+
+/* =========================================================
+   EDIT APPLICATION
+========================================================= */
+
+function editApplication(
+  applicationName
+) {
+
+  const application =
+    (window.applicationsData || [])
+      .find(function(item) {
+
+        return String(
+          item['Application'] || ''
+        ) ===
+        String(applicationName);
+
+      });
+
+
+  if (!application) {
+
+    alert('Application not found.');
+
+    return;
+
+  }
+
+
+  closeApplicationDetails();
+
+
+  openEditApplicationModal(
+    application
+  );
+
+}
+
+
+/* =========================================================
+   OPEN EDIT APPLICATION MODAL
+========================================================= */
+
+function openEditApplicationModal(
+  application
+) {
+
+  const existing =
+    document.getElementById(
+      'applicationModal'
+    );
+
+
+  if (existing) {
+    existing.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+
+  modal.id =
+    'applicationModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Edit Application
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(
+              application['Application'] || ''
+            )}
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeApplicationModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="editApplicationForm"
+        data-application-name="${escapeAttribute(
+          application['Application'] || ''
+        )}"
+        onsubmit="submitApplicationEdit(event)"
+      >
+
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+
+            <span>🔧</span>
+            Basic Application Information
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Application *
+            </label>
+
+            <input
+              type="text"
+              name="application"
+              required
+              value="${escapeAttribute(
+                application['Application'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Industry
+            </label>
+
+            <input
+              type="text"
+              name="industry"
+              value="${escapeAttribute(
+                application['Industry'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Process / Area
+            </label>
+
+            <input
+              type="text"
+              name="processArea"
+              value="${escapeAttribute(
+                application['Process / Area'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Cable Required
+            </label>
+
+            <input
+              type="text"
+              name="cableRequired"
+              value="${escapeAttribute(
+                application['Cable Required'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>👥</span>
+            Customer & Sales Knowledge
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Why Cable Is Required
+            </label>
+
+            <textarea
+              name="whyCableRequired"
+              rows="3"
+            >${escapeHtml(
+              application['Why Cable Is Required'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Customer Type
+            </label>
+
+            <input
+              type="text"
+              name="customerType"
+              value="${escapeAttribute(
+                application['Customer Type'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Typical Buyer
+            </label>
+
+            <input
+              type="text"
+              name="typicalBuyer"
+              value="${escapeAttribute(
+                application['Typical Buyer'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Customer Requirement
+            </label>
+
+            <textarea
+              name="customerRequirement"
+              rows="3"
+            >${escapeHtml(
+              application['Customer Requirement'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>🎯</span>
+            Opportunity & Selling
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Opportunity Identification
+            </label>
+
+            <textarea
+              name="opportunityIdentification"
+              rows="3"
+            >${escapeHtml(
+              application[
+                'Opportunity Identification'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Questions to Ask
+            </label>
+
+            <textarea
+              name="questionsToAsk"
+              rows="4"
+            >${escapeHtml(
+              application['Questions to Ask'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Selling Points
+            </label>
+
+            <textarea
+              name="keySellingPoints"
+              rows="3"
+            >${escapeHtml(
+              application['Key Selling Points'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>⚙️</span>
+            Technical & Objection Handling
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Technical Considerations
+            </label>
+
+            <textarea
+              name="technicalConsiderations"
+              rows="3"
+            >${escapeHtml(
+              application[
+                'Technical Considerations'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Common Objections
+            </label>
+
+            <textarea
+              name="commonObjections"
+              rows="3"
+            >${escapeHtml(
+              application[
+                'Common Objections'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Objection Answer
+            </label>
+
+            <textarea
+              name="objectionAnswer"
+              rows="3"
+            >${escapeHtml(
+              application[
+                'Objection Answer'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              value="${escapeAttribute(
+                application[
+                  'Related Products'
+                ] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option
+                value="Active"
+                ${
+                  String(
+                    application['Status'] ||
+                    'Active'
+                  ) === 'Active'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Active
+              </option>
+
+              <option
+                value="Inactive"
+                ${
+                  String(
+                    application['Status'] ||
+                    ''
+                  ) === 'Inactive'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeApplicationModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="updateApplicationButton"
+          >
+            Save Changes
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   SUBMIT APPLICATION EDIT
+========================================================= */
+
+function submitApplicationEdit(event) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'editApplicationForm'
+    );
+
+
+  const button =
+    document.getElementById(
+      'updateApplicationButton'
+    );
+
+
+  const originalName =
+    form.dataset.applicationName;
+
+
+  const application = {
+
+    application:
+      form.application.value,
+
+    industry:
+      form.industry.value,
+
+    processArea:
+      form.processArea.value,
+
+    cableRequired:
+      form.cableRequired.value,
+
+    whyCableRequired:
+      form.whyCableRequired.value,
+
+    customerType:
+      form.customerType.value,
+
+    typicalBuyer:
+      form.typicalBuyer.value,
+
+    customerRequirement:
+      form.customerRequirement.value,
+
+    opportunityIdentification:
+      form.opportunityIdentification.value,
+
+    questionsToAsk:
+      form.questionsToAsk.value,
+
+    keySellingPoints:
+      form.keySellingPoints.value,
+
+    technicalConsiderations:
+      form.technicalConsiderations.value,
+
+    commonObjections:
+      form.commonObjections.value,
+
+    objectionAnswer:
+      form.objectionAnswer.value,
+
+    relatedProducts:
+      form.relatedProducts.value,
+
+    status:
+      form.status.value
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeApplicationModal();
+
+
+      showSuccessMessage(
+        'Application updated successfully.'
+      );
+
+
+      loadSection('Applications');
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Changes';
+
+
+      alert(
+        error.message ||
+        'Unable to update application.'
+      );
+
+    })
+
+    .updateApplication(
+      originalName,
+      application
+    );
+
+}
+
+
+/* =========================================================
+   CONFIRM DELETE APPLICATION
+========================================================= */
+
+function confirmDeleteApplication(
+  applicationName
+) {
+
+  const application =
+    (window.applicationsData || [])
+      .find(function(item) {
+
+        return String(
+          item['Application'] || ''
+        ) ===
+        String(applicationName);
+
+      });
+
+
+  if (!application) {
+
+    alert('Application not found.');
+
+    return;
+
+  }
+
+
+  const confirmed =
+    confirm(
+      'Delete this application?\n\n' +
+      applicationName +
+      '\n\n' +
+      'This will permanently remove it from the Applications sheet.'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  deleteApplication(
+    applicationName
+  );
+
+}
+
+
+/* =========================================================
+   DELETE APPLICATION
+========================================================= */
+
+function deleteApplication(
+  applicationName
+) {
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeApplicationDetails();
+
+
+      showSuccessMessage(
+        'Application "' +
+        result.application +
+        '" deleted successfully.'
+      );
+
+
+      loadSection('Applications');
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      alert(
+        error.message ||
+        'Unable to delete application.'
+      );
+
+    })
+
+    .deleteApplication(
+      applicationName
     );
 
 }

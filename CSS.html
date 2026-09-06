@@ -1436,6 +1436,8 @@ body {
 
   -webkit-line-clamp: 3;
 
+  line-clamp: 3;
+
   -webkit-box-orient: vertical;
 
   overflow: hidden;
@@ -1738,6 +1740,423 @@ body {
     padding: 6px 7px;
 
     font-size: 10px;
+  }
+
+}
+
+/* =========================================================
+   PRODUCT FORM SECTIONS
+========================================================= */
+
+.form-section-title {
+  grid-column: 1 / -1;
+
+  margin-top: 12px;
+  margin-bottom: 2px;
+
+  padding: 10px 12px;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  color: #087f5b;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.2px;
+}
+
+
+.form-section-title span {
+  margin-right: 6px;
+}
+
+
+.form-section-title:first-child {
+  margin-top: 0;
+}
+
+/* =========================================================
+   EDIT PRODUCT FORM - MATCH ADD PRODUCT LAYOUT
+========================================================= */
+
+#editProductForm {
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#editProductForm .form-grid {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#editProductForm .form-group {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+#editProductForm input,
+#editProductForm textarea,
+#editProductForm select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#editProductForm .form-section-title {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#editProductForm .modal-footer {
+  margin-left: -20px;
+  margin-right: -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* =========================================================
+   APPLICATION TOOLBAR
+========================================================= */
+
+.application-toolbar {
+  display: grid;
+
+  grid-template-columns:
+    minmax(260px, 1fr)
+    220px
+    220px;
+
+  gap: 10px;
+
+  margin-bottom: 22px;
+}
+
+
+.application-search {
+  position: relative;
+}
+
+
+.application-search .search-box {
+  margin: 0;
+}
+
+
+/* =========================================================
+   APPLICATIONS GRID
+========================================================= */
+
+.applications-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+
+/* =========================================================
+   APPLICATION CARD
+========================================================= */
+
+.application-card {
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 13px;
+
+  padding: 18px;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+
+.application-card:hover {
+  transform: translateY(-2px);
+
+  border-color: #d1d5db;
+
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.06);
+}
+
+
+/* =========================================================
+   APPLICATION CARD TOP
+========================================================= */
+
+.application-card-top {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 12px;
+}
+
+
+.application-icon {
+  width: 42px;
+
+  height: 42px;
+
+  border-radius: 10px;
+
+  background: #ecfdf5;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 21px;
+}
+
+
+.application-status {
+  font-size: 11px;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  background: #ecfdf5;
+
+  color: #047857;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   APPLICATION NAME
+========================================================= */
+
+.application-name {
+  font-size: 17px;
+
+  font-weight: 700;
+
+  line-height: 22px;
+
+  color: #111827;
+
+  margin-bottom: 4px;
+}
+
+
+.application-industry {
+  font-size: 12px;
+
+  color: #6b7280;
+
+  margin-bottom: 15px;
+}
+
+
+/* =========================================================
+   APPLICATION INFO
+========================================================= */
+
+.application-info-list {
+  border-top: 1px solid #f1f5f9;
+
+  border-bottom: 1px solid #f1f5f9;
+
+  padding: 10px 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+
+.application-info-list div {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  gap: 12px;
+
+  font-size: 12px;
+}
+
+
+.application-info-list span {
+  color: #9ca3af;
+
+  flex-shrink: 0;
+}
+
+
+.application-info-list b {
+  color: #374151;
+
+  text-align: right;
+
+  font-weight: 600;
+
+  line-height: 17px;
+}
+
+
+/* =========================================================
+   APPLICATION REQUIREMENT
+========================================================= */
+
+.application-requirement {
+  margin-top: 12px;
+
+  font-size: 12px;
+
+  color: #4b5563;
+
+  line-height: 18px;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 3;
+
+  line-clamp: 3;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   APPLICATION FOOTER
+========================================================= */
+
+.application-card-footer {
+  display: flex;
+
+  justify-content: flex-end;
+
+  align-items: center;
+
+  margin-top: auto;
+
+  padding-top: 16px;
+}
+
+
+/* =========================================================
+   APPLICATION DETAILS
+========================================================= */
+
+.application-details-modal {
+  max-width: 900px;
+}
+
+
+.application-details-body {
+  padding: 22px;
+
+  overflow-y: auto;
+}
+
+
+.application-detail-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+}
+
+
+/* =========================================================
+   APPLICATION RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .applications-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+
+  .application-toolbar {
+    grid-template-columns:
+      minmax(200px, 1fr)
+      1fr;
+
+  }
+
+
+  .application-search {
+    grid-column: 1 / -1;
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .application-toolbar {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+  }
+
+
+  .applications-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .application-card {
+    padding: 16px;
+  }
+
+
+  .application-details-body {
+    padding: 17px;
+  }
+
+
+  .application-detail-actions {
+    gap: 4px;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .application-detail-actions
+  .edit-product-button,
+  .application-detail-actions
+  .delete-product-button {
+
+    padding: 6px 7px;
+
+    font-size: 10px;
+
   }
 
 }
