@@ -539,6 +539,23 @@ if (section === 'Applications') {
 
 }
 
+/* =======================================================
+   INDUSTRIES
+======================================================= */
+
+if (section === 'Industries') {
+
+  renderIndustriesPage(data);
+
+  return;
+
+}
+
+if (section === 'Competitors') {
+  renderCompetitorsPage(data);
+  return;
+}
+
 
   /* =======================================================
      OTHER SECTIONS
@@ -5201,6 +5218,4575 @@ function deleteApplication(
 
     .deleteApplication(
       applicationName
+    );
+
+}
+
+/* =========================================================
+   INDUSTRIES PAGE
+========================================================= */
+
+function renderIndustriesPage(
+  industries
+) {
+
+  const app =
+    document.getElementById('app');
+
+
+  const segments =
+    getUniqueValues(
+      industries,
+      'Major Segments'
+    );
+
+
+  const cables =
+    getUniqueValues(
+      industries,
+      'Cables Used'
+    );
+
+
+  app.innerHTML = `
+
+    <div class="page-header section-header">
+
+      <div>
+
+        <h1 class="page-title">
+          Industries
+        </h1>
+
+        <div class="page-description">
+          ${industries.length}
+          industr${industries.length === 1 ? 'y' : 'ies'}
+        </div>
+
+      </div>
+
+
+      <button
+        class="primary-button"
+        onclick="openAddIndustryModal()"
+      >
+        + Add Industry
+      </button>
+
+    </div>
+
+
+    <div class="industry-toolbar">
+
+      <div class="industry-search">
+
+        <span class="search-icon">
+          🔍
+        </span>
+
+        <input
+          id="industrySearch"
+          class="search-box"
+          type="text"
+          placeholder="Search industries..."
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <select
+        id="industrySegmentFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Segments
+        </option>
+
+        ${segments.map(function(value) {
+
+          return `
+            <option
+              value="${escapeAttribute(value)}"
+            >
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+
+      <select
+        id="industryCableFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Cables
+        </option>
+
+        ${cables.map(function(value) {
+
+          return `
+            <option
+              value="${escapeAttribute(value)}"
+            >
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+    </div>
+
+
+    <div
+      id="industryResults"
+      class="industries-grid"
+    ></div>
+
+  `;
+
+
+  window.industriesData =
+    industries;
+
+
+  renderIndustryCards(
+    industries
+  );
+
+
+  setupIndustryFilters();
+
+}
+
+
+/* =========================================================
+   INDUSTRY FILTERS
+========================================================= */
+
+function setupIndustryFilters() {
+
+  const search =
+    document.getElementById(
+      'industrySearch'
+    );
+
+
+  const segment =
+    document.getElementById(
+      'industrySegmentFilter'
+    );
+
+
+  const cable =
+    document.getElementById(
+      'industryCableFilter'
+    );
+
+
+  function applyFilters() {
+
+    const searchText =
+      search.value
+        .trim()
+        .toLowerCase();
+
+
+    const segmentValue =
+      segment.value
+        .trim()
+        .toLowerCase();
+
+
+    const cableValue =
+      cable.value
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+      window.industriesData.filter(
+        function(industry) {
+
+          const searchable =
+            Object.values(industry)
+              .join(' ')
+              .toLowerCase();
+
+
+          const matchesSearch =
+            !searchText ||
+            searchable.includes(
+              searchText
+            );
+
+
+          const matchesSegment =
+            !segmentValue ||
+            String(
+              industry['Major Segments'] || ''
+            )
+              .toLowerCase()
+              .includes(
+                segmentValue
+              );
+
+
+          const matchesCable =
+            !cableValue ||
+            String(
+              industry['Cables Used'] || ''
+            )
+              .toLowerCase()
+              .includes(
+                cableValue
+              );
+
+
+          return (
+            matchesSearch &&
+            matchesSegment &&
+            matchesCable
+          );
+
+        }
+      );
+
+
+    renderIndustryCards(
+      filtered
+    );
+
+  }
+
+
+  search.addEventListener(
+    'input',
+    applyFilters
+  );
+
+
+  segment.addEventListener(
+    'change',
+    applyFilters
+  );
+
+
+  cable.addEventListener(
+    'change',
+    applyFilters
+  );
+
+}
+
+
+/* =========================================================
+   INDUSTRY CARDS
+========================================================= */
+
+function renderIndustryCards(
+  industries
+) {
+
+  const container =
+    document.getElementById(
+      'industryResults'
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!industries.length) {
+
+    container.innerHTML = `
+
+      <div class="empty-state industry-empty">
+
+        <div class="empty-icon">
+          🔍
+        </div>
+
+        <div class="empty-title">
+          No industries found
+        </div>
+
+        <div>
+          Try changing your search or filters.
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    industries.map(
+      function(industry) {
+
+        return createIndustryCard(
+          industry
+        );
+
+      }
+    ).join('');
+
+}
+
+
+/* =========================================================
+   INDUSTRY CARD
+========================================================= */
+
+function createIndustryCard(
+  industry
+) {
+
+  const industryId =
+    industry['Industry ID'] || '';
+
+
+  const industryName =
+    industry['Industry'] ||
+    'Unnamed Industry';
+
+
+  const segments =
+    industry['Major Segments'] || '';
+
+
+  const projects =
+    industry['Typical Projects'] || '';
+
+
+  const cables =
+    industry['Cables Used'] || '';
+
+
+  const applications =
+    industry['Key Applications'] || '';
+
+
+  const customers =
+    industry['Customer Types'] || '';
+
+
+  const buyers =
+    industry['Typical Buyers'] || '';
+
+
+  const status =
+    industry['Status'] ||
+    'Active';
+
+
+  return `
+
+    <div class="industry-card">
+
+
+      <div class="industry-card-top">
+
+        <div class="industry-icon">
+          🏭
+        </div>
+
+
+        <div class="industry-status">
+          ${escapeHtml(status)}
+        </div>
+
+      </div>
+
+
+      <div class="industry-id">
+        ${escapeHtml(industryId)}
+      </div>
+
+
+      <div class="industry-name">
+        ${escapeHtml(industryName)}
+      </div>
+
+
+      ${
+        segments
+          ? `
+            <div class="industry-segments">
+              ${escapeHtml(segments)}
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="industry-info-list">
+
+
+        ${
+          cables
+            ? `
+              <div>
+
+                <span>
+                  Cables
+                </span>
+
+                <b>
+                  ${escapeHtml(cables)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          applications
+            ? `
+              <div>
+
+                <span>
+                  Applications
+                </span>
+
+                <b>
+                  ${escapeHtml(applications)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          customers
+            ? `
+              <div>
+
+                <span>
+                  Customers
+                </span>
+
+                <b>
+                  ${escapeHtml(customers)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          buyers
+            ? `
+              <div>
+
+                <span>
+                  Buyers
+                </span>
+
+                <b>
+                  ${escapeHtml(buyers)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+      </div>
+
+
+      ${
+        projects
+          ? `
+            <div class="industry-projects">
+
+              <span>
+                Typical Projects
+              </span>
+
+              <div>
+                ${escapeHtml(projects)}
+              </div>
+
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="industry-card-footer">
+
+        <button
+          class="view-product-button"
+          onclick="viewIndustry(
+            '${escapeAttribute(industryId)}'
+          )"
+        >
+          View Details →
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   VIEW INDUSTRY
+========================================================= */
+
+function viewIndustry(
+  industryId
+) {
+
+  const industry =
+    (window.industriesData || [])
+      .find(function(item) {
+
+        return String(
+          item['Industry ID'] || ''
+        ) ===
+        String(industryId);
+
+      });
+
+
+  if (!industry) {
+
+    alert('Industry not found.');
+
+    return;
+
+  }
+
+
+  openIndustryDetails(
+    industry
+  );
+
+}
+
+
+/* =========================================================
+   INDUSTRY DETAILS
+========================================================= */
+
+function openIndustryDetails(
+  industry
+) {
+
+  const old =
+    document.getElementById(
+      'industryDetailsModal'
+    );
+
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+
+  modal.id =
+    'industryDetailsModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  const industryId =
+    industry['Industry ID'] || '';
+
+
+  const industryName =
+    industry['Industry'] ||
+    'Industry Details';
+
+
+  modal.innerHTML = `
+
+    <div class="modal industry-details-modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            ${escapeHtml(industryName)}
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(industryId)}
+          </div>
+
+        </div>
+
+
+        <div class="industry-detail-actions">
+
+
+          <button
+            class="edit-product-button"
+            onclick="editIndustry(
+              '${escapeAttribute(industryId)}'
+            )"
+          >
+            ✏️ Edit
+          </button>
+
+
+          <button
+            class="delete-product-button"
+            onclick="confirmDeleteIndustry(
+              '${escapeAttribute(industryId)}'
+            )"
+          >
+            🗑️ Delete
+          </button>
+
+
+          <button
+            class="modal-close"
+            onclick="closeIndustryDetails()"
+          >
+            ×
+          </button>
+
+
+        </div>
+
+      </div>
+
+
+      <div class="industry-details-body">
+
+
+        ${createIndustryDetailSection(
+          'Basic Information',
+          [
+            [
+              'Industry ID',
+              industry['Industry ID']
+            ],
+            [
+              'Industry',
+              industry['Industry']
+            ],
+            [
+              'Major Segments',
+              industry['Major Segments']
+            ],
+            [
+              'Typical Projects',
+              industry['Typical Projects']
+            ]
+          ]
+        )}
+
+
+        ${createIndustryDetailSection(
+          'Cables & Applications',
+          [
+            [
+              'Cables Used',
+              industry['Cables Used']
+            ],
+            [
+              'Key Applications',
+              industry['Key Applications']
+            ]
+          ]
+        )}
+
+
+        ${createIndustryDetailSection(
+          'Customers & Buying',
+          [
+            [
+              'Customer Types',
+              industry['Customer Types']
+            ],
+            [
+              'Typical Buyers',
+              industry['Typical Buyers']
+            ],
+            [
+              'Decision Makers',
+              industry['Decision Makers']
+            ],
+            [
+              'Customer Requirements',
+              industry['Customer Requirements']
+            ]
+          ]
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Sales Opportunity',
+          industry[
+            'Opportunity Identification'
+          ]
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Questions to Ask',
+          industry[
+            'Questions to Ask'
+          ]
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Key Selling Points',
+          industry[
+            'Key Selling Points'
+          ]
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Technical & Objection Handling',
+          industry[
+            'Technical Considerations'
+          ]
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Common Objections',
+          industry[
+            'Common Objections'
+          ]
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Objection Answers',
+          industry[
+            'Objection Answers'
+          ]
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Related Products',
+          industry[
+            'Related Products'
+          ]
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Status',
+          industry['Status']
+        )}
+
+
+        ${createIndustryDetailTextSection(
+          'Last Updated',
+          industry['Last Updated']
+        )}
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   INDUSTRY DETAIL SECTION
+========================================================= */
+
+function createIndustryDetailSection(
+  title,
+  fields
+) {
+
+  const validFields =
+    fields.filter(function(field) {
+
+      return String(
+        field[1] || ''
+      ).trim() !== '';
+
+    });
+
+
+  if (!validFields.length) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+
+      <div class="detail-grid">
+
+        ${validFields.map(
+          function(field) {
+
+            return `
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  ${escapeHtml(field[0])}
+                </div>
+
+                <div class="detail-value">
+                  ${formatCell(field[1])}
+                </div>
+
+              </div>
+
+            `;
+
+          }
+        ).join('')}
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   INDUSTRY DETAIL TEXT
+========================================================= */
+
+function createIndustryDetailTextSection(
+  title,
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    String(value).trim() === ''
+  ) {
+
+    return '';
+
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+      <div class="detail-text">
+        ${formatCell(value)}
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   CLOSE INDUSTRY DETAILS
+========================================================= */
+
+function closeIndustryDetails() {
+
+  const modal =
+    document.getElementById(
+      'industryDetailsModal'
+    );
+
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   ADD INDUSTRY MODAL
+========================================================= */
+
+function openAddIndustryModal() {
+
+  const existing =
+    document.getElementById(
+      'industryModal'
+    );
+
+
+  if (existing) {
+    existing.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+
+  modal.id =
+    'industryModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Add Industry
+          </div>
+
+          <div class="modal-subtitle">
+            Add a new industry to your knowledge hub
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeIndustryModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="addIndustryForm"
+        onsubmit="submitIndustry(event)"
+      >
+
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+
+            <span>🏭</span>
+            Basic Industry Information
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Industry *
+            </label>
+
+            <input
+              type="text"
+              name="industry"
+              required
+              placeholder="e.g. Oil & Gas"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Major Segments
+            </label>
+
+            <input
+              type="text"
+              name="majorSegments"
+              placeholder="Refineries, Petrochemical..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Typical Projects
+            </label>
+
+            <input
+              type="text"
+              name="typicalProjects"
+              placeholder="Expansion, Brownfield..."
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>🔌</span>
+            Cables & Applications
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Cables Used
+            </label>
+
+            <input
+              type="text"
+              name="cablesUsed"
+              placeholder="Instrumentation, Control, Power..."
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Applications
+            </label>
+
+            <textarea
+              name="keyApplications"
+              rows="3"
+              placeholder="Main applications in this industry"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>👥</span>
+            Customers & Buying
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Customer Types
+            </label>
+
+            <input
+              type="text"
+              name="customerTypes"
+              placeholder="OEM, EPC, Contractor..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Typical Buyers
+            </label>
+
+            <input
+              type="text"
+              name="typicalBuyers"
+              placeholder="Engineer, Purchase Manager..."
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Decision Makers
+            </label>
+
+            <input
+              type="text"
+              name="decisionMakers"
+              placeholder="Project Head, Engineering Head..."
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Customer Requirements
+            </label>
+
+            <textarea
+              name="customerRequirements"
+              rows="3"
+              placeholder="What does the customer require?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>🎯</span>
+            Sales Opportunity
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Opportunity Identification
+            </label>
+
+            <textarea
+              name="opportunityIdentification"
+              rows="3"
+              placeholder="How can you identify opportunities?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Questions to Ask
+            </label>
+
+            <textarea
+              name="questionsToAsk"
+              rows="4"
+              placeholder="Questions to ask the customer"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Selling Points
+            </label>
+
+            <textarea
+              name="keySellingPoints"
+              rows="3"
+              placeholder="What should you highlight?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>⚙️</span>
+            Technical & Objection Handling
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Technical Considerations
+            </label>
+
+            <textarea
+              name="technicalConsiderations"
+              rows="3"
+              placeholder="Technical considerations"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Common Objections
+            </label>
+
+            <textarea
+              name="commonObjections"
+              rows="3"
+              placeholder="Common customer objections"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Objection Answers
+            </label>
+
+            <textarea
+              name="objectionAnswers"
+              rows="3"
+              placeholder="How should you answer?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              placeholder="Instrumentation; Control..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option value="Active">
+                Active
+              </option>
+
+              <option value="Inactive">
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeIndustryModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="saveIndustryButton"
+          >
+            Save Industry
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+
+  setTimeout(function() {
+
+    const input =
+      modal.querySelector(
+        'input[name="industry"]'
+      );
+
+
+    if (input) {
+      input.focus();
+    }
+
+  }, 50);
+
+}
+
+
+/* =========================================================
+   CLOSE INDUSTRY MODAL
+========================================================= */
+
+function closeIndustryModal() {
+
+  const modal =
+    document.getElementById(
+      'industryModal'
+    );
+
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT INDUSTRY
+========================================================= */
+
+function submitIndustry(event) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'addIndustryForm'
+    );
+
+
+  const button =
+    document.getElementById(
+      'saveIndustryButton'
+    );
+
+
+  const formData =
+    new FormData(form);
+
+
+  const industry = {
+
+    industry:
+      formData.get('industry'),
+
+    majorSegments:
+      formData.get('majorSegments'),
+
+    typicalProjects:
+      formData.get('typicalProjects'),
+
+    cablesUsed:
+      formData.get('cablesUsed'),
+
+    keyApplications:
+      formData.get('keyApplications'),
+
+    customerTypes:
+      formData.get('customerTypes'),
+
+    typicalBuyers:
+      formData.get('typicalBuyers'),
+
+    decisionMakers:
+      formData.get('decisionMakers'),
+
+    customerRequirements:
+      formData.get('customerRequirements'),
+
+    opportunityIdentification:
+      formData.get(
+        'opportunityIdentification'
+      ),
+
+    questionsToAsk:
+      formData.get(
+        'questionsToAsk'
+      ),
+
+    keySellingPoints:
+      formData.get(
+        'keySellingPoints'
+      ),
+
+    technicalConsiderations:
+      formData.get(
+        'technicalConsiderations'
+      ),
+
+    commonObjections:
+      formData.get(
+        'commonObjections'
+      ),
+
+    objectionAnswers:
+      formData.get(
+        'objectionAnswers'
+      ),
+
+    relatedProducts:
+      formData.get(
+        'relatedProducts'
+      ),
+
+    status:
+      formData.get('status')
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeIndustryModal();
+
+
+      showSuccessMessage(
+        'Industry ' +
+        result.industryId +
+        ' added successfully.'
+      );
+
+
+      loadSection(
+        'Industries'
+      );
+
+    })
+
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Industry';
+
+
+      alert(
+        error.message ||
+        'Unable to save industry.'
+      );
+
+    })
+
+
+    .addIndustry(industry);
+
+}
+
+
+/* =========================================================
+   EDIT INDUSTRY
+========================================================= */
+
+function editIndustry(
+  industryId
+) {
+
+  const industry =
+    (window.industriesData || [])
+      .find(function(item) {
+
+        return String(
+          item['Industry ID'] || ''
+        ) ===
+        String(industryId);
+
+      });
+
+
+  if (!industry) {
+
+    alert('Industry not found.');
+
+    return;
+
+  }
+
+
+  closeIndustryDetails();
+
+
+  openEditIndustryModal(
+    industry
+  );
+
+}
+
+
+/* =========================================================
+   EDIT INDUSTRY MODAL
+========================================================= */
+
+function openEditIndustryModal(
+  industry
+) {
+
+  const existing =
+    document.getElementById(
+      'industryModal'
+    );
+
+
+  if (existing) {
+    existing.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+
+  modal.id =
+    'industryModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Edit Industry
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(
+              industry['Industry ID'] || ''
+            )}
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeIndustryModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="editIndustryForm"
+        data-industry-id="${escapeAttribute(
+          industry['Industry ID'] || ''
+        )}"
+        onsubmit="submitIndustryEdit(event)"
+      >
+
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+
+            <span>🏭</span>
+            Basic Industry Information
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Industry *
+            </label>
+
+            <input
+              type="text"
+              name="industry"
+              required
+              value="${escapeAttribute(
+                industry['Industry'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Major Segments
+            </label>
+
+            <input
+              type="text"
+              name="majorSegments"
+              value="${escapeAttribute(
+                industry['Major Segments'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Typical Projects
+            </label>
+
+            <input
+              type="text"
+              name="typicalProjects"
+              value="${escapeAttribute(
+                industry['Typical Projects'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>🔌</span>
+            Cables & Applications
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Cables Used
+            </label>
+
+            <input
+              type="text"
+              name="cablesUsed"
+              value="${escapeAttribute(
+                industry['Cables Used'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Applications
+            </label>
+
+            <textarea
+              name="keyApplications"
+              rows="3"
+            >${escapeHtml(
+              industry['Key Applications'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>👥</span>
+            Customers & Buying
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Customer Types
+            </label>
+
+            <input
+              type="text"
+              name="customerTypes"
+              value="${escapeAttribute(
+                industry['Customer Types'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Typical Buyers
+            </label>
+
+            <input
+              type="text"
+              name="typicalBuyers"
+              value="${escapeAttribute(
+                industry['Typical Buyers'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Decision Makers
+            </label>
+
+            <input
+              type="text"
+              name="decisionMakers"
+              value="${escapeAttribute(
+                industry['Decision Makers'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Customer Requirements
+            </label>
+
+            <textarea
+              name="customerRequirements"
+              rows="3"
+            >${escapeHtml(
+              industry[
+                'Customer Requirements'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>🎯</span>
+            Sales Opportunity
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Opportunity Identification
+            </label>
+
+            <textarea
+              name="opportunityIdentification"
+              rows="3"
+            >${escapeHtml(
+              industry[
+                'Opportunity Identification'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Questions to Ask
+            </label>
+
+            <textarea
+              name="questionsToAsk"
+              rows="4"
+            >${escapeHtml(
+              industry[
+                'Questions to Ask'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Selling Points
+            </label>
+
+            <textarea
+              name="keySellingPoints"
+              rows="3"
+            >${escapeHtml(
+              industry[
+                'Key Selling Points'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+
+            <span>⚙️</span>
+            Technical & Objection Handling
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Technical Considerations
+            </label>
+
+            <textarea
+              name="technicalConsiderations"
+              rows="3"
+            >${escapeHtml(
+              industry[
+                'Technical Considerations'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Common Objections
+            </label>
+
+            <textarea
+              name="commonObjections"
+              rows="3"
+            >${escapeHtml(
+              industry[
+                'Common Objections'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Objection Answers
+            </label>
+
+            <textarea
+              name="objectionAnswers"
+              rows="3"
+            >${escapeHtml(
+              industry[
+                'Objection Answers'
+              ] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              value="${escapeAttribute(
+                industry[
+                  'Related Products'
+                ] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option
+                value="Active"
+                ${
+                  String(
+                    industry['Status'] ||
+                    'Active'
+                  ) === 'Active'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Active
+              </option>
+
+
+              <option
+                value="Inactive"
+                ${
+                  String(
+                    industry['Status'] ||
+                    ''
+                  ) === 'Inactive'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeIndustryModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="updateIndustryButton"
+          >
+            Save Changes
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   SUBMIT INDUSTRY EDIT
+========================================================= */
+
+function submitIndustryEdit(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'editIndustryForm'
+    );
+
+
+  const button =
+    document.getElementById(
+      'updateIndustryButton'
+    );
+
+
+  const industryId =
+    form.dataset.industryId;
+
+
+  const industry = {
+
+    industry:
+      form.industry.value,
+
+    majorSegments:
+      form.majorSegments.value,
+
+    typicalProjects:
+      form.typicalProjects.value,
+
+    cablesUsed:
+      form.cablesUsed.value,
+
+    keyApplications:
+      form.keyApplications.value,
+
+    customerTypes:
+      form.customerTypes.value,
+
+    typicalBuyers:
+      form.typicalBuyers.value,
+
+    decisionMakers:
+      form.decisionMakers.value,
+
+    customerRequirements:
+      form.customerRequirements.value,
+
+    opportunityIdentification:
+      form.opportunityIdentification.value,
+
+    questionsToAsk:
+      form.questionsToAsk.value,
+
+    keySellingPoints:
+      form.keySellingPoints.value,
+
+    technicalConsiderations:
+      form.technicalConsiderations.value,
+
+    commonObjections:
+      form.commonObjections.value,
+
+    objectionAnswers:
+      form.objectionAnswers.value,
+
+    relatedProducts:
+      form.relatedProducts.value,
+
+    status:
+      form.status.value
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeIndustryModal();
+
+
+      showSuccessMessage(
+        'Industry ' +
+        result.industryId +
+        ' updated successfully.'
+      );
+
+
+      loadSection(
+        'Industries'
+      );
+
+    })
+
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Changes';
+
+
+      alert(
+        error.message ||
+        'Unable to update industry.'
+      );
+
+    })
+
+
+    .updateIndustry(
+      industryId,
+      industry
+    );
+
+}
+
+
+/* =========================================================
+   CONFIRM DELETE INDUSTRY
+========================================================= */
+
+function confirmDeleteIndustry(
+  industryId
+) {
+
+  const industry =
+    (window.industriesData || [])
+      .find(function(item) {
+
+        return String(
+          item['Industry ID'] || ''
+        ) ===
+        String(industryId);
+
+      });
+
+
+  if (!industry) {
+
+    alert('Industry not found.');
+
+    return;
+
+  }
+
+
+  const confirmed =
+    confirm(
+      'Delete this industry?\n\n' +
+      industry['Industry'] +
+      '\n' +
+      industryId +
+      '\n\n' +
+      'This will permanently remove it from the Industries sheet.'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  deleteIndustryRecord(
+    industryId
+  );
+
+}
+
+
+/* =========================================================
+   DELETE INDUSTRY RECORD
+========================================================= */
+
+function deleteIndustryRecord(
+  industryId
+) {
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeIndustryDetails();
+
+
+      showSuccessMessage(
+        'Industry ' +
+        result.industryId +
+        ' deleted successfully.'
+      );
+
+
+      loadSection(
+        'Industries'
+      );
+
+    })
+
+
+    .withFailureHandler(function(error) {
+
+      alert(
+        error.message ||
+        'Unable to delete industry.'
+      );
+
+    })
+
+
+    .deleteIndustry(
+      industryId
+    );
+
+}
+
+/* =========================================================
+   COMPETITORS PAGE
+========================================================= */
+
+function renderCompetitorsPage(
+  competitors
+) {
+
+  const app =
+    document.getElementById('app');
+
+  const industries =
+    getUniqueValues(
+      competitors,
+      'Industries Served'
+    );
+
+  const products =
+    getUniqueValues(
+      competitors,
+      'Main Products'
+    );
+
+  app.innerHTML = `
+
+    <div class="page-header section-header">
+
+      <div>
+
+        <h1 class="page-title">
+          Competitors
+        </h1>
+
+        <div class="page-description">
+          ${competitors.length}
+          competitor${competitors.length === 1 ? '' : 's'}
+        </div>
+
+      </div>
+
+      <button
+        class="primary-button"
+        onclick="openAddCompetitorModal()"
+      >
+        + Add Competitor
+      </button>
+
+    </div>
+
+
+    <div class="competitor-toolbar">
+
+      <div class="competitor-search">
+
+        <span class="search-icon">
+          🔍
+        </span>
+
+        <input
+          id="competitorSearch"
+          class="search-box"
+          type="text"
+          placeholder="Search competitors..."
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <select
+        id="competitorIndustryFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Industries
+        </option>
+
+        ${industries.map(function(value) {
+
+          return `
+            <option
+              value="${escapeAttribute(value)}"
+            >
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+
+      <select
+        id="competitorProductFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Products
+        </option>
+
+        ${products.map(function(value) {
+
+          return `
+            <option
+              value="${escapeAttribute(value)}"
+            >
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+    </div>
+
+
+    <div
+      id="competitorResults"
+      class="competitors-grid"
+    ></div>
+
+  `;
+
+
+  window.competitorsData =
+    competitors;
+
+
+  renderCompetitorCards(
+    competitors
+  );
+
+
+  setupCompetitorFilters();
+
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+function setupCompetitorFilters() {
+
+  const search =
+    document.getElementById(
+      'competitorSearch'
+    );
+
+  const industry =
+    document.getElementById(
+      'competitorIndustryFilter'
+    );
+
+  const product =
+    document.getElementById(
+      'competitorProductFilter'
+    );
+
+
+  function applyFilters() {
+
+    const searchText =
+      search.value
+        .trim()
+        .toLowerCase();
+
+    const industryValue =
+      industry.value
+        .trim()
+        .toLowerCase();
+
+    const productValue =
+      product.value
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+      window.competitorsData.filter(
+        function(competitor) {
+
+          const searchable =
+            Object.values(competitor)
+              .join(' ')
+              .toLowerCase();
+
+
+          const matchesSearch =
+            !searchText ||
+            searchable.includes(
+              searchText
+            );
+
+
+          const matchesIndustry =
+            !industryValue ||
+            String(
+              competitor[
+                'Industries Served'
+              ] || ''
+            )
+              .toLowerCase()
+              .includes(
+                industryValue
+              );
+
+
+          const matchesProduct =
+            !productValue ||
+            String(
+              competitor[
+                'Main Products'
+              ] || ''
+            )
+              .toLowerCase()
+              .includes(
+                productValue
+              );
+
+
+          return (
+            matchesSearch &&
+            matchesIndustry &&
+            matchesProduct
+          );
+
+        }
+      );
+
+
+    renderCompetitorCards(
+      filtered
+    );
+
+  }
+
+
+  search.addEventListener(
+    'input',
+    applyFilters
+  );
+
+  industry.addEventListener(
+    'change',
+    applyFilters
+  );
+
+  product.addEventListener(
+    'change',
+    applyFilters
+  );
+
+}
+
+
+/* =========================================================
+   COMPETITOR CARDS
+========================================================= */
+
+function renderCompetitorCards(
+  competitors
+) {
+
+  const container =
+    document.getElementById(
+      'competitorResults'
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!competitors.length) {
+
+    container.innerHTML = `
+
+      <div class="empty-state">
+
+        <div class="empty-icon">
+          🔍
+        </div>
+
+        <div class="empty-title">
+          No competitors found
+        </div>
+
+        <div>
+          Try changing your search or filters.
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    competitors.map(
+      function(competitor) {
+
+        return createCompetitorCard(
+          competitor
+        );
+
+      }
+    ).join('');
+
+}
+
+
+/* =========================================================
+   COMPETITOR CARD
+========================================================= */
+
+function createCompetitorCard(
+  competitor
+) {
+
+  const id =
+    competitor['Competitor ID'] || '';
+
+  const name =
+    competitor['Competitor'] ||
+    'Unnamed Competitor';
+
+  const companyType =
+    competitor['Company Type'] || '';
+
+  const products =
+    competitor['Main Products'] || '';
+
+  const industries =
+    competitor['Industries Served'] || '';
+
+  const applications =
+    competitor['Applications'] || '';
+
+  const strengths =
+    competitor['Strengths'] || '';
+
+  const price =
+    competitor['Price Position'] || '';
+
+  const status =
+    competitor['Status'] ||
+    'Active';
+
+
+  return `
+
+    <div class="competitor-card">
+
+
+      <div class="competitor-card-top">
+
+        <div class="competitor-icon">
+          🏢
+        </div>
+
+
+        <div class="competitor-status">
+          ${escapeHtml(status)}
+        </div>
+
+      </div>
+
+
+      <div class="competitor-id">
+        ${escapeHtml(id)}
+      </div>
+
+
+      <div class="competitor-name">
+        ${escapeHtml(name)}
+      </div>
+
+
+      ${
+        companyType
+          ? `
+            <div class="competitor-type">
+              ${escapeHtml(companyType)}
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="competitor-info-list">
+
+
+        ${
+          products
+            ? `
+              <div>
+
+                <span>
+                  Products
+                </span>
+
+                <b>
+                  ${escapeHtml(products)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          industries
+            ? `
+              <div>
+
+                <span>
+                  Industries
+                </span>
+
+                <b>
+                  ${escapeHtml(industries)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          applications
+            ? `
+              <div>
+
+                <span>
+                  Applications
+                </span>
+
+                <b>
+                  ${escapeHtml(applications)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          price
+            ? `
+              <div>
+
+                <span>
+                  Price
+                </span>
+
+                <b>
+                  ${escapeHtml(price)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+      </div>
+
+
+      ${
+        strengths
+          ? `
+            <div class="competitor-strengths">
+
+              <span>
+                Strengths
+              </span>
+
+              <div>
+                ${escapeHtml(strengths)}
+              </div>
+
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="competitor-card-footer">
+
+        <button
+          class="view-product-button"
+          onclick="viewCompetitor(
+            '${escapeAttribute(id)}'
+          )"
+        >
+          View Details →
+        </button>
+
+      </div>
+
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   VIEW COMPETITOR
+========================================================= */
+
+function viewCompetitor(
+  competitorId
+) {
+
+  const competitor =
+    (window.competitorsData || [])
+      .find(function(item) {
+
+        return String(
+          item['Competitor ID'] || ''
+        ) ===
+        String(competitorId);
+
+      });
+
+
+  if (!competitor) {
+
+    alert('Competitor not found.');
+
+    return;
+
+  }
+
+
+  openCompetitorDetails(
+    competitor
+  );
+
+}
+
+
+/* =========================================================
+   COMPETITOR DETAILS
+========================================================= */
+
+function openCompetitorDetails(
+  competitor
+) {
+
+  const old =
+    document.getElementById(
+      'competitorDetailsModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'competitorDetailsModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  const id =
+    competitor['Competitor ID'] || '';
+
+  const name =
+    competitor['Competitor'] ||
+    'Competitor Details';
+
+
+  modal.innerHTML = `
+
+    <div class="modal competitor-details-modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            ${escapeHtml(name)}
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(id)}
+          </div>
+
+        </div>
+
+
+        <div class="competitor-detail-actions">
+
+
+          <button
+            class="edit-product-button"
+            onclick="editCompetitor(
+              '${escapeAttribute(id)}'
+            )"
+          >
+            ✏️ Edit
+          </button>
+
+
+          <button
+            class="delete-product-button"
+            onclick="confirmDeleteCompetitor(
+              '${escapeAttribute(id)}'
+            )"
+          >
+            🗑️ Delete
+          </button>
+
+
+          <button
+            class="modal-close"
+            onclick="closeCompetitorDetails()"
+          >
+            ×
+          </button>
+
+
+        </div>
+
+      </div>
+
+
+      <div class="competitor-details-body">
+
+
+        ${createCompetitorDetailSection(
+          'Company Information',
+          [
+            [
+              'Competitor ID',
+              competitor['Competitor ID']
+            ],
+            [
+              'Competitor',
+              competitor['Competitor']
+            ],
+            [
+              'Company Type',
+              competitor['Company Type']
+            ]
+          ]
+        )}
+
+
+        ${createCompetitorDetailSection(
+          'Products & Markets',
+          [
+            [
+              'Main Products',
+              competitor['Main Products']
+            ],
+            [
+              'Industries Served',
+              competitor['Industries Served']
+            ],
+            [
+              'Applications',
+              competitor['Applications']
+            ]
+          ]
+        )}
+
+
+        ${createCompetitorDetailSection(
+          'Strengths & Weaknesses',
+          [
+            [
+              'Strengths',
+              competitor['Strengths']
+            ],
+            [
+              'Weaknesses',
+              competitor['Weaknesses']
+            ]
+          ]
+        )}
+
+
+        ${createCompetitorDetailSection(
+          'Market Position',
+          [
+            [
+              'Price Position',
+              competitor['Price Position']
+            ],
+            [
+              'Market Position',
+              competitor['Market Position']
+            ]
+          ]
+        )}
+
+
+        ${createCompetitorDetailSection(
+          'Customers & Buying',
+          [
+            [
+              'Customer Type',
+              competitor['Customer Type']
+            ],
+            [
+              'Typical Buyers',
+              competitor['Typical Buyers']
+            ]
+          ]
+        )}
+
+
+        ${createCompetitorDetailSection(
+          'Competitive Analysis',
+          [
+            [
+              'Key Differentiators',
+              competitor['Key Differentiators']
+            ],
+            [
+              'Polycab Advantage',
+              competitor['Polycab Advantage']
+            ]
+          ]
+        )}
+
+
+        ${createCompetitorDetailTextSection(
+          'Objections & Response',
+          competitor['Common Objections']
+        )}
+
+
+        ${createCompetitorDetailTextSection(
+          'How to Respond',
+          competitor['How to Respond']
+        )}
+
+
+        ${createCompetitorDetailTextSection(
+          'Opportunity Strategy',
+          competitor['Opportunity Strategy']
+        )}
+
+
+        ${createCompetitorDetailTextSection(
+          'Related Products',
+          competitor['Related Products']
+        )}
+
+
+        ${createCompetitorDetailSection(
+          'Status',
+          [
+            [
+              'Status',
+              competitor['Status']
+            ],
+            [
+              'Last Updated',
+              competitor['Last Updated']
+            ]
+          ]
+        )}
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   DETAIL SECTION
+========================================================= */
+
+function createCompetitorDetailSection(
+  title,
+  fields
+) {
+
+  const validFields =
+    fields.filter(function(field) {
+
+      return String(
+        field[1] || ''
+      ).trim() !== '';
+
+    });
+
+
+  if (!validFields.length) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+
+      <div class="detail-grid">
+
+        ${validFields.map(
+          function(field) {
+
+            return `
+
+              <div class="detail-item">
+
+                <div class="detail-label">
+                  ${escapeHtml(field[0])}
+                </div>
+
+                <div class="detail-value">
+                  ${formatCell(field[1])}
+                </div>
+
+              </div>
+
+            `;
+
+          }
+        ).join('')}
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   DETAIL TEXT
+========================================================= */
+
+function createCompetitorDetailTextSection(
+  title,
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    String(value).trim() === ''
+  ) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+      <div class="detail-text">
+        ${formatCell(value)}
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   CLOSE DETAILS
+========================================================= */
+
+function closeCompetitorDetails() {
+
+  const modal =
+    document.getElementById(
+      'competitorDetailsModal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   ADD COMPETITOR
+========================================================= */
+
+function openAddCompetitorModal() {
+
+  const existing =
+    document.getElementById(
+      'competitorModal'
+    );
+
+  if (existing) {
+    existing.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'competitorModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Add Competitor
+          </div>
+
+          <div class="modal-subtitle">
+            Add competitor sales intelligence
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeCompetitorModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="addCompetitorForm"
+        onsubmit="submitCompetitor(event)"
+      >
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+            <span>🏢</span>
+            Basic Information
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Competitor *
+            </label>
+
+            <input
+              type="text"
+              name="competitor"
+              required
+              placeholder="e.g. KEI Industries"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Company Type
+            </label>
+
+            <input
+              type="text"
+              name="companyType"
+              placeholder="Cable Manufacturer"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option value="Active">
+                Active
+              </option>
+
+              <option value="Inactive">
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🔌</span>
+            Products & Markets
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Main Products
+            </label>
+
+            <input
+              type="text"
+              name="mainProducts"
+              placeholder="LV Cables; HT Cables; Control..."
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Industries Served
+            </label>
+
+            <input
+              type="text"
+              name="industriesServed"
+              placeholder="Power; Infrastructure; Industrial..."
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Applications
+            </label>
+
+            <textarea
+              name="applications"
+              rows="3"
+              placeholder="Power distribution; Industrial plants..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📊</span>
+            Competitive Position
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Strengths
+            </label>
+
+            <textarea
+              name="strengths"
+              rows="3"
+              placeholder="Competitor strengths"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Weaknesses
+            </label>
+
+            <textarea
+              name="weaknesses"
+              rows="3"
+              placeholder="Competitor weaknesses"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Price Position
+            </label>
+
+            <select name="pricePosition">
+
+              <option value="">
+                Select
+              </option>
+
+              <option value="Economy">
+                Economy
+              </option>
+
+              <option value="Mid">
+                Mid
+              </option>
+
+              <option value="Mid to Premium">
+                Mid to Premium
+              </option>
+
+              <option value="Premium">
+                Premium
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Market Position
+            </label>
+
+            <input
+              type="text"
+              name="marketPosition"
+              placeholder="Strong; Established; Regional..."
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>👥</span>
+            Customers & Buying
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Customer Type
+            </label>
+
+            <input
+              type="text"
+              name="customerType"
+              placeholder="Utilities; EPC; Industrial..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Typical Buyers
+            </label>
+
+            <input
+              type="text"
+              name="typicalBuyers"
+              placeholder="Project Manager; Purchase Manager..."
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🎯</span>
+            Sales Strategy
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Differentiators
+            </label>
+
+            <textarea
+              name="keyDifferentiators"
+              rows="3"
+              placeholder="What makes the competitor different?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Polycab Advantage
+            </label>
+
+            <textarea
+              name="polycabAdvantage"
+              rows="3"
+              placeholder="Where can Polycab create an advantage?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Opportunity Strategy
+            </label>
+
+            <textarea
+              name="opportunityStrategy"
+              rows="3"
+              placeholder="How should we approach opportunities?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>💬</span>
+            Objections & Response
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Common Objections
+            </label>
+
+            <textarea
+              name="commonObjections"
+              rows="3"
+              placeholder="What does the customer usually say?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              How to Respond
+            </label>
+
+            <textarea
+              name="howToRespond"
+              rows="4"
+              placeholder="How should you respond?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              placeholder="LV Cables; HT Cables; Control..."
+            >
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeCompetitorModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="saveCompetitorButton"
+          >
+            Save Competitor
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+
+  setTimeout(function() {
+
+    const input =
+      modal.querySelector(
+        'input[name="competitor"]'
+      );
+
+    if (input) {
+      input.focus();
+    }
+
+  }, 50);
+
+}
+
+
+/* =========================================================
+   CLOSE ADD / EDIT
+========================================================= */
+
+function closeCompetitorModal() {
+
+  const modal =
+    document.getElementById(
+      'competitorModal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT ADD
+========================================================= */
+
+function submitCompetitor(event) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'addCompetitorForm'
+    );
+
+  const button =
+    document.getElementById(
+      'saveCompetitorButton'
+    );
+
+  const data =
+    new FormData(form);
+
+
+  const competitor = {
+
+    competitor:
+      data.get('competitor'),
+
+    companyType:
+      data.get('companyType'),
+
+    mainProducts:
+      data.get('mainProducts'),
+
+    industriesServed:
+      data.get('industriesServed'),
+
+    applications:
+      data.get('applications'),
+
+    strengths:
+      data.get('strengths'),
+
+    weaknesses:
+      data.get('weaknesses'),
+
+    pricePosition:
+      data.get('pricePosition'),
+
+    marketPosition:
+      data.get('marketPosition'),
+
+    customerType:
+      data.get('customerType'),
+
+    typicalBuyers:
+      data.get('typicalBuyers'),
+
+    keyDifferentiators:
+      data.get('keyDifferentiators'),
+
+    polycabAdvantage:
+      data.get('polycabAdvantage'),
+
+    commonObjections:
+      data.get('commonObjections'),
+
+    howToRespond:
+      data.get('howToRespond'),
+
+    opportunityStrategy:
+      data.get('opportunityStrategy'),
+
+    relatedProducts:
+      data.get('relatedProducts'),
+
+    status:
+      data.get('status')
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeCompetitorModal();
+
+      showSuccessMessage(
+        'Competitor ' +
+        result.competitorId +
+        ' added successfully.'
+      );
+
+      loadSection(
+        'Competitors'
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Competitor';
+
+      alert(
+        error.message ||
+        'Unable to save competitor.'
+      );
+
+    })
+
+    .addCompetitor(
+      competitor
+    );
+
+}
+
+
+/* =========================================================
+   EDIT COMPETITOR
+========================================================= */
+
+function editCompetitor(
+  competitorId
+) {
+
+  const competitor =
+    (window.competitorsData || [])
+      .find(function(item) {
+
+        return String(
+          item['Competitor ID'] || ''
+        ) ===
+        String(competitorId);
+
+      });
+
+
+  if (!competitor) {
+
+    alert('Competitor not found.');
+
+    return;
+
+  }
+
+  closeCompetitorDetails();
+
+window.editingCompetitorId =
+  competitor['Competitor ID'];
+
+openEditCompetitorModal(
+  competitor
+);
+
+}
+
+
+/* =========================================================
+   EDIT MODAL
+========================================================= */
+
+function openEditCompetitorModal(
+  competitor
+) {
+
+  const existing =
+    document.getElementById(
+      'competitorModal'
+    );
+
+  if (existing) {
+    existing.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'competitorModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Edit Competitor
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(
+              competitor['Competitor ID'] || ''
+            )}
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeCompetitorModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="editCompetitorForm"
+        onsubmit="submitCompetitorEdit(event)"
+      >
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+            <span>🏢</span>
+            Basic Information
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Competitor *
+            </label>
+
+            <input
+              type="text"
+              name="competitor"
+              required
+              value="${escapeAttribute(
+                competitor['Competitor'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Company Type
+            </label>
+
+            <input
+              type="text"
+              name="companyType"
+              value="${escapeAttribute(
+                competitor['Company Type'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option
+                value="Active"
+                ${
+                  String(
+                    competitor['Status'] ||
+                    'Active'
+                  ) === 'Active'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Active
+              </option>
+
+              <option
+                value="Inactive"
+                ${
+                  String(
+                    competitor['Status'] ||
+                    ''
+                  ) === 'Inactive'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🔌</span>
+            Products & Markets
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Main Products
+            </label>
+
+            <input
+              type="text"
+              name="mainProducts"
+              value="${escapeAttribute(
+                competitor['Main Products'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Industries Served
+            </label>
+
+            <input
+              type="text"
+              name="industriesServed"
+              value="${escapeAttribute(
+                competitor['Industries Served'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Applications
+            </label>
+
+            <textarea
+              name="applications"
+              rows="3"
+            >${escapeHtml(
+              competitor['Applications'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📊</span>
+            Competitive Position
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Strengths
+            </label>
+
+            <textarea
+              name="strengths"
+              rows="3"
+            >${escapeHtml(
+              competitor['Strengths'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Weaknesses
+            </label>
+
+            <textarea
+              name="weaknesses"
+              rows="3"
+            >${escapeHtml(
+              competitor['Weaknesses'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Price Position
+            </label>
+
+            <select name="pricePosition">
+
+              <option value="">
+                Select
+              </option>
+
+              <option
+                value="Economy"
+                ${
+                  competitor['Price Position'] === 'Economy'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Economy
+              </option>
+
+              <option
+                value="Mid"
+                ${
+                  competitor['Price Position'] === 'Mid'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Mid
+              </option>
+
+              <option
+                value="Mid to Premium"
+                ${
+                  competitor['Price Position'] === 'Mid to Premium'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Mid to Premium
+              </option>
+
+              <option
+                value="Premium"
+                ${
+                  competitor['Price Position'] === 'Premium'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Premium
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Market Position
+            </label>
+
+            <input
+              type="text"
+              name="marketPosition"
+              value="${escapeAttribute(
+                competitor['Market Position'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>👥</span>
+            Customers & Buying
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Customer Type
+            </label>
+
+            <input
+              type="text"
+              name="customerType"
+              value="${escapeAttribute(
+                competitor['Customer Type'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Typical Buyers
+            </label>
+
+            <input
+              type="text"
+              name="typicalBuyers"
+              value="${escapeAttribute(
+                competitor['Typical Buyers'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🎯</span>
+            Sales Strategy
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Differentiators
+            </label>
+
+            <textarea
+              name="keyDifferentiators"
+              rows="3"
+            >${escapeHtml(
+              competitor['Key Differentiators'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Polycab Advantage
+            </label>
+
+            <textarea
+              name="polycabAdvantage"
+              rows="3"
+            >${escapeHtml(
+              competitor['Polycab Advantage'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Opportunity Strategy
+            </label>
+
+            <textarea
+              name="opportunityStrategy"
+              rows="3"
+            >${escapeHtml(
+              competitor['Opportunity Strategy'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>💬</span>
+            Objections & Response
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Common Objections
+            </label>
+
+            <textarea
+              name="commonObjections"
+              rows="3"
+            >${escapeHtml(
+              competitor['Common Objections'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              How to Respond
+            </label>
+
+            <textarea
+              name="howToRespond"
+              rows="4"
+            >${escapeHtml(
+              competitor['How to Respond'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              value="${escapeAttribute(
+                competitor['Related Products'] || ''
+              )}"
+            >
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeCompetitorModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="updateCompetitorButton"
+          >
+            Save Changes
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   SUBMIT EDIT
+========================================================= */
+
+function submitCompetitorEdit(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'editCompetitorForm'
+    );
+
+  const button =
+    document.getElementById(
+      'updateCompetitorButton'
+    );
+
+
+  const id =
+    document.querySelector(
+      '#competitorDetailsModal'
+    )?.dataset?.competitorId ||
+    window.editingCompetitorId;
+
+
+  if (!id) {
+
+    /*
+     * Recover ID from the selected
+     * competitor using competitor name.
+     */
+
+    const name =
+      form.competitor.value;
+
+    const found =
+      (window.competitorsData || [])
+        .find(function(item) {
+
+          return String(
+            item['Competitor'] || ''
+          ).trim() ===
+          String(name).trim();
+
+        });
+
+    if (found) {
+      window.editingCompetitorId =
+        found['Competitor ID'];
+    }
+
+  }
+
+
+  const competitorId =
+    window.editingCompetitorId;
+
+
+  if (!competitorId) {
+
+    alert(
+      'Competitor ID could not be found.'
+    );
+
+    return;
+
+  }
+
+
+  const competitor = {
+
+    competitor:
+      form.competitor.value,
+
+    companyType:
+      form.companyType.value,
+
+    mainProducts:
+      form.mainProducts.value,
+
+    industriesServed:
+      form.industriesServed.value,
+
+    applications:
+      form.applications.value,
+
+    strengths:
+      form.strengths.value,
+
+    weaknesses:
+      form.weaknesses.value,
+
+    pricePosition:
+      form.pricePosition.value,
+
+    marketPosition:
+      form.marketPosition.value,
+
+    customerType:
+      form.customerType.value,
+
+    typicalBuyers:
+      form.typicalBuyers.value,
+
+    keyDifferentiators:
+      form.keyDifferentiators.value,
+
+    polycabAdvantage:
+      form.polycabAdvantage.value,
+
+    commonObjections:
+      form.commonObjections.value,
+
+    howToRespond:
+      form.howToRespond.value,
+
+    opportunityStrategy:
+      form.opportunityStrategy.value,
+
+    relatedProducts:
+      form.relatedProducts.value,
+
+    status:
+      form.status.value
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      window.editingCompetitorId = null;
+
+      closeCompetitorModal();
+
+      showSuccessMessage(
+        'Competitor updated successfully.'
+      );
+
+      loadSection(
+        'Competitors'
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Changes';
+
+      alert(
+        error.message ||
+        'Unable to update competitor.'
+      );
+
+    })
+
+    .updateCompetitor(
+      competitorId,
+      competitor
+    );
+
+}
+
+
+/* =========================================================
+   DELETE CONFIRMATION
+========================================================= */
+
+function confirmDeleteCompetitor(
+  competitorId
+) {
+
+  const competitor =
+    (window.competitorsData || [])
+      .find(function(item) {
+
+        return String(
+          item['Competitor ID'] || ''
+        ) ===
+        String(competitorId);
+
+      });
+
+
+  if (!competitor) {
+
+    alert('Competitor not found.');
+
+    return;
+
+  }
+
+
+  const confirmed =
+    confirm(
+      'Delete this competitor?\n\n' +
+      competitor['Competitor'] +
+      '\n' +
+      competitorId +
+      '\n\n' +
+      'This will permanently remove it from the Competitors sheet.'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeCompetitorDetails();
+
+      showSuccessMessage(
+        'Competitor ' +
+        result.competitorId +
+        ' deleted successfully.'
+      );
+
+      loadSection(
+        'Competitors'
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      alert(
+        error.message ||
+        'Unable to delete competitor.'
+      );
+
+    })
+
+    .deleteCompetitor(
+      competitorId
     );
 
 }
