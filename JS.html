@@ -183,7 +183,7 @@ function renderDashboard(data) {
         id="globalSearch"
         class="search-box"
         type="text"
-        placeholder="Search products, cables, industries..."
+          placeholder="Search everything... then press Enter"
         autocomplete="off"
       >
 
@@ -354,23 +354,39 @@ function setupDashboardSearch() {
   }
 
 
-  search.addEventListener('keydown', function (event) {
+  let searchTimer;
 
-    if (event.key !== 'Enter') {
-      return;
-    }
+  search.addEventListener('input', function() {
 
+    clearTimeout(searchTimer);
 
     const value =
-      search.value.trim();
+      search.value;
 
-
-    if (!value) {
+    if (!value.trim()) {
+      renderDashboard(dashboardDataCache || {});
       return;
     }
 
+    searchTimer = setTimeout(function() {
+      searchAllSections(value);
+    }, 180);
 
-    searchProducts(value);
+  });
+
+
+  search.addEventListener('keydown', function (event) {
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+
+      const value =
+        search.value.trim();
+
+      if (value) {
+        searchAllSections(value);
+      }
+    }
 
   });
 
@@ -383,31 +399,336 @@ function setupDashboardSearch() {
 
 function searchProducts(searchText) {
 
-  showLoading();
+  searchAllSections(searchText);
+
+}
 
 
-  google.script.run
+function searchAllSections(searchText) {
 
-    .withSuccessHandler(function (products) {
+  const rawSearch =
+    String(searchText || '');
 
-      const filtered =
-        filterRecords(products, searchText);
+  if (!rawSearch.trim()) {
+    return;
+  }
 
 
-      renderSearchResults(
-        searchText,
-        filtered
-      );
+  if (!Object.keys(sectionDataCache).length) {
 
-    })
+    showLoading();
 
-    .withFailureHandler(function (error) {
+    google.script.run
 
-      showError(error);
+      .withSuccessHandler(function(data) {
 
-    })
+        Object.keys(data).forEach(function(section) {
+          sectionDataCache[section] = data[section];
+        });
 
-    .getProducts();
+        renderUniversalSearchResults(rawSearch);
+
+      })
+
+      .withFailureHandler(showError)
+
+      .getAllSectionData();
+
+    return;
+  }
+
+
+  renderUniversalSearchResults(rawSearch);
+
+}
+
+
+function renderUniversalSearchResults(searchText) {
+
+  const normalizedSearch =
+    searchText.trim().toLowerCase();
+
+  const grouped = {};
+  let total = 0;
+
+  Object.keys(sectionDataCache).forEach(function(section) {
+
+    const matches =
+      (sectionDataCache[section] || [])
+        .filter(function(record) {
+
+          return Object.values(record)
+            .some(function(value) {
+
+              return String(value)
+                .toLowerCase()
+                .includes(normalizedSearch);
+
+            });
+
+        });
+
+    if (matches.length) {
+      grouped[section] = matches;
+      total += matches.length;
+    }
+
+  });
+
+
+  const app =
+    document.getElementById('app');
+
+  let html = `
+    <div class="page-header">
+      <h1 class="page-title">Search Results</h1>
+      <div class="page-description">
+        ${total} result${total === 1 ? '' : 's'} for
+        "${escapeHtml(searchText)}"
+      </div>
+    </div>
+
+    <div class="search-container universal-search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        id="globalSearch"
+        class="search-box"
+        type="text"
+        value="${escapeAttribute(searchText)}"
+        placeholder="Keep typing to refine your search..."
+        autocomplete="off"
+      >
+    </div>
+  `;
+
+
+  if (!total) {
+
+    html += `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">No results found</div>
+        <div>Try a product, cable, industry, application, topic or document name.</div>
+      </div>
+    `;
+  }
+
+
+  if (total) {
+
+    Object.keys(grouped).forEach(function(section) {
+
+    const records = grouped[section];
+
+    html += `
+      <section class="universal-search-section">
+        <div class="universal-search-heading">
+          <span>${escapeHtml(section)}</span>
+          <b>${records.length}</b>
+        </div>
+
+        <div class="universal-search-list">
+          ${records.map(function(record) {
+            return createUniversalSearchItem(section, record);
+          }).join('')}
+        </div>
+      </section>
+    `;
+
+    });
+
+  }
+
+  app.innerHTML = html;
+  setupDashboardSearch();
+
+  const searchInput =
+    document.getElementById('globalSearch');
+
+  if (searchInput) {
+    searchInput.focus();
+    searchInput.setSelectionRange(
+      searchText.length,
+      searchText.length
+    );
+  }
+
+}
+
+
+function createUniversalSearchItem(section, record) {
+
+  const titleBySection = {
+    'Products': record['Product Name'],
+    'Applications': record['Application'],
+    'Industries': record['Industry'],
+    'Competitors': record['Competitor'],
+    'Cable Knowledge': record['Topic'] || record['Question'],
+    'Learning': record['Topic'],
+    'Career Growth': record['Goal'] || record['Topic'],
+    'Documents': record['Document Name']
+  };
+
+  const title =
+    titleBySection[section] || 'Untitled record';
+
+  const idBySection = {
+    'Products': record['Product ID'],
+    'Applications': record['Application'],
+    'Industries': record['Industry ID'],
+    'Competitors': record['Competitor ID'],
+    'Cable Knowledge': record['Knowledge ID'],
+    'Learning': record['Learning ID'],
+    'Career Growth': record['Career ID'],
+    'Documents': record['Document ID']
+  };
+
+  const recordId =
+    idBySection[section] || title;
+
+  const details =
+    Object.entries(record)
+      .filter(function(entry) {
+        return (
+          entry[1] &&
+          entry[0].indexOf('ID') === -1 &&
+          entry[0] !== 'Last Updated'
+        );
+      })
+      .slice(0, 3)
+      .map(function(entry) {
+        return `
+          <span>
+            <b>${escapeHtml(entry[0])}:</b>
+            ${escapeHtml(entry[1])}
+          </span>
+        `;
+      })
+      .join('');
+
+  return `
+    <button
+      class="universal-search-item"
+      onclick="openUniversalSearchResult(
+        '${escapeAttribute(section)}',
+        '${escapeAttribute(recordId)}'
+      )"
+    >
+      <small>${escapeHtml(section)}</small>
+      <strong>${escapeHtml(title)}</strong>
+      <div>${details}</div>
+    </button>
+  `;
+
+}
+
+
+function openUniversalSearchResult(section, recordId) {
+
+  const idBySection = {
+    'Products': 'Product ID',
+    'Applications': 'Application',
+    'Industries': 'Industry ID',
+    'Competitors': 'Competitor ID',
+    'Cable Knowledge': 'Knowledge ID',
+    'Learning': 'Learning ID',
+    'Career Growth': 'Career ID',
+    'Documents': 'Document ID'
+  };
+
+  const idField =
+    idBySection[section];
+
+  const record =
+    (sectionDataCache[section] || [])
+      .find(function(item) {
+        return String(item[idField] || '') ===
+          String(recordId);
+      });
+
+  if (!record) {
+    alert('Record not found.');
+    return;
+  }
+
+  const oldModal =
+    document.getElementById('universalSearchDetails');
+
+  if (oldModal) {
+    oldModal.remove();
+  }
+
+  const fields =
+    Object.entries(record)
+      .filter(function(entry) {
+        return String(entry[1] || '').trim() !== '';
+      })
+      .map(function(entry) {
+        return `
+          <div class="detail-item">
+            <div class="detail-label">${escapeHtml(entry[0])}</div>
+            <div class="detail-value">${formatCell(entry[1])}</div>
+          </div>
+        `;
+      })
+      .join('');
+
+  const modal =
+    document.createElement('div');
+
+  modal.id = 'universalSearchDetails';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">${escapeHtml(
+            titleForSearchRecord(section, record)
+          )}</div>
+          <div class="modal-subtitle">${escapeHtml(section)}</div>
+        </div>
+        <button
+          class="modal-close"
+          onclick="closeUniversalSearchDetails()"
+        >×</button>
+      </div>
+      <div class="detail-modal-body">
+        <div class="detail-grid">${fields}</div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+}
+
+
+function titleForSearchRecord(section, record) {
+
+  const titleBySection = {
+    'Products': record['Product Name'],
+    'Applications': record['Application'],
+    'Industries': record['Industry'],
+    'Competitors': record['Competitor'],
+    'Cable Knowledge': record['Topic'] || record['Question'],
+    'Learning': record['Topic'],
+    'Career Growth': record['Goal'] || record['Topic'],
+    'Documents': record['Document Name']
+  };
+
+  return titleBySection[section] || 'Record Details';
+
+}
+
+
+function closeUniversalSearchDetails() {
+
+  const modal =
+    document.getElementById('universalSearchDetails');
+
+  if (modal) {
+    modal.remove();
+  }
 
 }
 
@@ -1899,6 +2220,31 @@ function showError(error) {
 
 
 /* =========================================================
+   DELETE PASSWORD PROMPT
+========================================================= */
+
+function requestDeletePassword() {
+
+  const password =
+    prompt(
+      'Enter the delete password to permanently remove this record:'
+    );
+
+  if (password === null) {
+    return null;
+  }
+
+  if (!String(password).trim()) {
+    alert('Delete cancelled: password is required.');
+    return null;
+  }
+
+  return password;
+
+}
+
+
+/* =========================================================
    HTML ESCAPE
 ========================================================= */
 
@@ -3114,6 +3460,13 @@ function confirmDeleteProduct(productId) {
 
 function deleteProduct(productId) {
 
+  const password =
+    requestDeletePassword();
+
+  if (password === null) {
+    return;
+  }
+
   google.script.run
 
     .withSuccessHandler(function(result) {
@@ -3141,7 +3494,10 @@ function deleteProduct(productId) {
 
     })
 
-    .deleteProduct(productId);
+    .deleteProduct(
+      productId,
+      password
+    );
 
 }
 
@@ -5400,6 +5756,13 @@ function deleteApplication(
   applicationName
 ) {
 
+  const password =
+    requestDeletePassword();
+
+  if (password === null) {
+    return;
+  }
+
   google.script.run
 
     .withSuccessHandler(function(result) {
@@ -5428,7 +5791,8 @@ function deleteApplication(
     })
 
     .deleteApplication(
-      applicationName
+      applicationName,
+      password
     );
 
 }
@@ -7664,6 +8028,13 @@ function deleteIndustryRecord(
   industryId
 ) {
 
+  const password =
+    requestDeletePassword();
+
+  if (password === null) {
+    return;
+  }
+
   google.script.run
 
     .withSuccessHandler(function(result) {
@@ -7697,7 +8068,8 @@ function deleteIndustryRecord(
 
 
     .deleteIndustry(
-      industryId
+      industryId,
+      password
     );
 
 }
@@ -9993,6 +10365,13 @@ function confirmDeleteCompetitor(
     return;
   }
 
+  const password =
+    requestDeletePassword();
+
+  if (password === null) {
+    return;
+  }
+
 
   google.script.run
 
@@ -10023,7 +10402,8 @@ function confirmDeleteCompetitor(
     })
 
     .deleteCompetitor(
-      competitorId
+      competitorId,
+      password
     );
 
 }
@@ -12032,6 +12412,13 @@ function confirmDeleteKnowledge(
     return;
   }
 
+  const password =
+    requestDeletePassword();
+
+  if (password === null) {
+    return;
+  }
+
 
   google.script.run
 
@@ -12062,7 +12449,8 @@ function confirmDeleteKnowledge(
     })
 
     .deleteKnowledge(
-      knowledgeId
+      knowledgeId,
+      password
     );
 
 }
@@ -14041,6 +14429,13 @@ function confirmDeleteLearning(
     return;
   }
 
+  const password =
+    requestDeletePassword();
+
+  if (password === null) {
+    return;
+  }
+
 
   google.script.run
 
@@ -14071,7 +14466,8 @@ function confirmDeleteLearning(
     })
 
     .deleteLearning(
-      learningId
+      learningId,
+      password
     );
 
 }
@@ -15948,6 +16344,13 @@ function confirmDeleteDocument(documentId) {
     return;
   }
 
+  const password =
+    requestDeletePassword();
+
+  if (password === null) {
+    return;
+  }
+
 
   google.script.run
 
@@ -15978,7 +16381,8 @@ function confirmDeleteDocument(documentId) {
     })
 
     .deleteDocument(
-      documentId
+      documentId,
+      password
     );
 
 }

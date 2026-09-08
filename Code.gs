@@ -173,6 +173,113 @@ function getSheetData(sheetName) {
 
 }
 
+
+/* =========================================================
+   DUPLICATE PREVENTION
+========================================================= */
+
+function normalizeDuplicateValue(value) {
+
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+
+}
+
+
+function assertNoDuplicate(
+  sheet,
+  fieldName,
+  newValue,
+  sectionName
+) {
+
+  const normalizedValue =
+    normalizeDuplicateValue(newValue);
+
+  if (!normalizedValue) {
+    throw new Error(
+      fieldName + ' is required.'
+    );
+  }
+
+
+  const lastRow =
+    sheet.getLastRow();
+
+  const lastColumn =
+    sheet.getLastColumn();
+
+  if (lastRow < 2 || lastColumn < 1) {
+    return;
+  }
+
+
+  const headers =
+    sheet
+      .getRange(1, 1, 1, lastColumn)
+      .getDisplayValues()[0]
+      .map(function(header) {
+        return String(header).trim();
+      });
+
+  const fieldColumn =
+    headers.indexOf(fieldName);
+
+  if (fieldColumn === -1) {
+    throw new Error(
+      fieldName + ' column not found in ' +
+      sectionName + '.'
+    );
+  }
+
+
+  const values =
+    sheet
+      .getRange(
+        2,
+        fieldColumn + 1,
+        lastRow - 1,
+        1
+      )
+      .getDisplayValues();
+
+  const duplicateFound =
+    values.some(function(row) {
+      return normalizeDuplicateValue(row[0]) ===
+        normalizedValue;
+    });
+
+  if (duplicateFound) {
+    throw new Error(
+      'Duplicate prevented: "' +
+      String(newValue).trim() +
+      '" already exists in ' +
+      sectionName + '.'
+    );
+  }
+
+}
+
+
+/* =========================================================
+   DELETE AUTHORIZATION
+========================================================= */
+
+const DELETE_PASSWORD = '123';
+
+
+function assertDeletePassword(password) {
+
+  if (String(password || '') !== DELETE_PASSWORD) {
+    throw new Error(
+      'Incorrect delete password. Record was not deleted.'
+    );
+  }
+
+}
+
 /* =========================================================
    DASHBOARD COUNTS
 ========================================================= */
@@ -343,6 +450,13 @@ function addProduct(product) {
   if (!sheet) {
     throw new Error('Products sheet not found.');
   }
+
+  assertNoDuplicate(
+    sheet,
+    'Product Name',
+    product.productName,
+    'Products'
+  );
 
   const lastColumn = sheet.getLastColumn();
 
@@ -673,7 +787,9 @@ function updateProduct(productId, product) {
    DELETE PRODUCT
 ========================================================= */
 
-function deleteProduct(productId) {
+function deleteProduct(productId, password) {
+
+  assertDeletePassword(password);
 
   const ss = getSpreadsheet();
   const sheet = ss.getSheetByName('Products');
@@ -842,6 +958,13 @@ function addApplication(application) {
     );
 
   }
+
+  assertNoDuplicate(
+    sheet,
+    'Application',
+    application.application,
+    'Applications'
+  );
 
 
   const lastColumn =
@@ -1285,9 +1408,11 @@ function updateApplication(
 ========================================================= */
 
 function deleteApplication(
-  applicationKey
+  applicationKey,
+  password
 ) {
 
+  assertDeletePassword(password);
   const ss =
     getSpreadsheet();
 
@@ -1498,6 +1623,13 @@ function addIndustry(industry) {
       'Industries sheet not found.'
     );
   }
+
+  assertNoDuplicate(
+    sheet,
+    'Industry',
+    industry.industry,
+    'Industries'
+  );
 
 
   const lastColumn =
@@ -1844,9 +1976,11 @@ function updateIndustry(
 ========================================================= */
 
 function deleteIndustry(
-  industryId
+  industryId,
+  password
 ) {
 
+  assertDeletePassword(password);
   const ss =
     getSpreadsheet();
 
@@ -2384,6 +2518,13 @@ function addCompetitor(competitor) {
     );
   }
 
+  assertNoDuplicate(
+    sheet,
+    'Competitor',
+    competitor.competitor,
+    'Competitors'
+  );
+
   const lastColumn =
     sheet.getLastColumn();
 
@@ -2751,9 +2892,11 @@ function updateCompetitor(
 ========================================================= */
 
 function deleteCompetitor(
-  competitorId
+  competitorId,
+  password
 ) {
 
+  assertDeletePassword(password);
   const ss =
     getSpreadsheet();
 
@@ -3110,6 +3253,13 @@ function addKnowledge(knowledge) {
     );
   }
 
+  assertNoDuplicate(
+    sheet,
+    'Topic',
+    knowledge.topic,
+    'Cable Knowledge'
+  );
+
   const lastColumn =
     sheet.getLastColumn();
 
@@ -3427,9 +3577,11 @@ function updateKnowledge(
 ========================================================= */
 
 function deleteKnowledge(
-  knowledgeId
+  knowledgeId,
+  password
 ) {
 
+  assertDeletePassword(password);
   const ss =
     getSpreadsheet();
 
@@ -3792,6 +3944,13 @@ function addLearning(learning) {
 
   }
 
+  assertNoDuplicate(
+    sheet,
+    'Topic',
+    learning.topic,
+    'Learning'
+  );
+
   const lastColumn =
     sheet.getLastColumn();
 
@@ -4102,9 +4261,11 @@ function updateLearning(
 ========================================================= */
 
 function deleteLearning(
-  learningId
+  learningId,
+  password
 ) {
 
+  assertDeletePassword(password);
   const ss =
     getSpreadsheet();
 
@@ -4444,6 +4605,13 @@ function addCareerGrowth(career) {
     );
   }
 
+  assertNoDuplicate(
+    sheet,
+    'Goal',
+    career.goal,
+    'Career Growth'
+  );
+
   const lastColumn =
     sheet.getLastColumn();
 
@@ -4746,9 +4914,11 @@ function updateCareerGrowth(
 ========================================================= */
 
 function deleteCareerGrowth(
-  careerId
+  careerId,
+  password
 ) {
 
+  assertDeletePassword(password);
   const ss =
     getSpreadsheet();
 
@@ -5069,6 +5239,13 @@ function addDocument(documentData) {
     throw new Error('Documents sheet not found.');
   }
 
+  assertNoDuplicate(
+    sheet,
+    'Document Name',
+    documentData.documentName,
+    'Documents'
+  );
+
   const lastColumn =
     sheet.getLastColumn();
 
@@ -5355,7 +5532,9 @@ function updateDocument(
    DELETE DOCUMENT
 ========================================================= */
 
-function deleteDocument(documentId) {
+function deleteDocument(documentId, password) {
+
+  assertDeletePassword(password);
 
   const ss = getSpreadsheet();
 
