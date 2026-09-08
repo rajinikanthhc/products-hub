@@ -11,11 +11,20 @@
    START APPLICATION
 ========================================================= */
 
+/*
+ * Sheet data does not change while a user is simply navigating.
+ * Keep it in memory so returning to a section is instantaneous.
+ */
+const sectionDataCache = Object.create(null);
+let dashboardDataCache = null;
+let latestSectionRequest = 0;
+
 document.addEventListener('DOMContentLoaded', function () {
 
   setupNavigation();
 
   loadDashboard();
+  preloadSectionData();
 
 });
 
@@ -85,12 +94,18 @@ function setActiveNavigation(activeButton) {
 
 function loadDashboard() {
 
+  if (dashboardDataCache) {
+    renderDashboard(dashboardDataCache);
+    return;
+  }
+
   showLoading();
 
   google.script.run
 
     .withSuccessHandler(function (data) {
 
+      dashboardDataCache = data;
       renderDashboard(data);
 
     })
@@ -109,6 +124,33 @@ function loadDashboard() {
 /* =========================================================
    RENDER DASHBOARD
 ========================================================= */
+
+/* =========================================================
+   PRELOAD NAVIGATION DATA
+   Runs quietly after the dashboard appears. If it fails, normal
+   section loading continues to work as a fallback.
+========================================================= */
+
+function preloadSectionData() {
+
+  google.script.run
+
+    .withSuccessHandler(function(data) {
+
+      Object.keys(data).forEach(function(section) {
+        sectionDataCache[section] = data[section];
+      });
+
+    })
+
+    .withFailureHandler(function() {
+      /* Individual section requests remain available as fallback. */
+    })
+
+    .getAllSectionData();
+
+}
+
 
 function renderDashboard(data) {
 
@@ -479,7 +521,25 @@ function renderSearchResults(
    LOAD SECTION
 ========================================================= */
 
-function loadSection(section) {
+function loadSection(section, forceRefresh) {
+
+  const requestId = ++latestSectionRequest;
+
+  if (
+    !forceRefresh &&
+    Object.prototype.hasOwnProperty.call(
+      sectionDataCache,
+      section
+    )
+  ) {
+
+    renderSection(
+      section,
+      sectionDataCache[section]
+    );
+
+    return;
+  }
 
   showLoading();
 
@@ -487,6 +547,17 @@ function loadSection(section) {
   google.script.run
 
     .withSuccessHandler(function (data) {
+
+      sectionDataCache[section] = data;
+
+      if (dashboardDataCache) {
+        dashboardDataCache[section] = data.length;
+      }
+
+      /* Ignore an older response after the user navigates away. */
+      if (requestId !== latestSectionRequest) {
+        return;
+      }
 
       renderSection(
         section,
@@ -497,7 +568,9 @@ function loadSection(section) {
 
     .withFailureHandler(function (error) {
 
-      showError(error);
+      if (requestId === latestSectionRequest) {
+        showError(error);
+      }
 
     })
 
@@ -553,6 +626,26 @@ if (section === 'Industries') {
 
 if (section === 'Competitors') {
   renderCompetitorsPage(data);
+  return;
+}
+
+if (section === 'Cable Knowledge') {
+  renderCableKnowledgePage(data);
+  return;
+}
+
+if (section === 'Learning') {
+  renderLearningPage(data);
+  return;
+}
+
+if (section === 'Career Growth') {
+    renderCareerGrowthPage(data);
+    return;
+  }
+
+  if (section === 'Documents') {
+  renderDocumentsPage(data);
   return;
 }
 
@@ -764,6 +857,13 @@ function renderProductsPage(products) {
   `;
 
 
+  setupSortControl(
+    '.product-toolbar',
+    'Product Name',
+    'Product Name',
+    'productSearch'
+  );
+
   window.productsData = products;
 
 
@@ -799,6 +899,104 @@ function getUniqueValues(data, field) {
 
   )].sort();
 
+}
+
+
+/* =========================================================
+   SHARED PAGE SORTING
+========================================================= */
+
+function setupSortControl(
+  toolbarSelector,
+  primaryField,
+  primaryLabel,
+  searchId
+) {
+
+  const toolbar =
+    document.querySelector(toolbarSelector);
+
+  if (!toolbar) {
+    return;
+  }
+
+  toolbar.insertAdjacentHTML(
+    'beforeend',
+    `
+      <select
+        class="filter-select sort-select"
+        aria-label="Sort ${escapeAttribute(primaryLabel)}"
+      >
+        <option value="default">Sort: Default</option>
+        <option value="az">${escapeHtml(primaryLabel)}: A–Z</option>
+        <option value="za">${escapeHtml(primaryLabel)}: Z–A</option>
+        <option value="newest">Last Updated: Newest</option>
+        <option value="oldest">Last Updated: Oldest</option>
+      </select>
+    `
+  );
+
+  const sort =
+    toolbar.querySelector('.sort-select');
+
+  sort.addEventListener('change', function() {
+    const search =
+      document.getElementById(searchId);
+
+    if (search) {
+      search.dispatchEvent(
+        new Event('input')
+      );
+    }
+  });
+}
+
+
+function sortRecords(records, primaryField) {
+
+  const sort =
+    document.querySelector('.sort-select');
+
+  const direction =
+    sort ? sort.value : 'default';
+
+  if (direction === 'default') {
+    return records;
+  }
+
+  return records.slice().sort(function(a, b) {
+
+    if (
+      direction === 'newest' ||
+      direction === 'oldest'
+    ) {
+
+      const aDate =
+        Date.parse(a['Last Updated'] || '') || 0;
+
+      const bDate =
+        Date.parse(b['Last Updated'] || '') || 0;
+
+      return direction === 'newest'
+        ? bDate - aDate
+        : aDate - bDate;
+    }
+
+    const comparison =
+      String(a[primaryField] || '')
+        .localeCompare(
+          String(b[primaryField] || ''),
+          undefined,
+          {
+            numeric: true,
+            sensitivity: 'base'
+          }
+        );
+
+    return direction === 'az'
+      ? comparison
+      : -comparison;
+  });
 }
 
 
@@ -917,6 +1115,9 @@ function setupProductFilters() {
 ========================================================= */
 
 function renderProductCards(products) {
+
+  products =
+    sortRecords(products, 'Product Name');
 
   const container =
     document.getElementById(
@@ -2254,7 +2455,7 @@ function submitProduct(event) {
       );
 
 
-      loadSection('Products');
+      loadSection('Products', true);
 
     })
 
@@ -2927,7 +3128,7 @@ function deleteProduct(productId) {
       );
 
 
-      loadSection('Products');
+      loadSection('Products', true);
 
     })
 
@@ -3098,7 +3299,7 @@ function submitProductEdit(event) {
       );
 
 
-      loadSection('Products');
+      loadSection('Products', true);
 
     })
 
@@ -3249,6 +3450,13 @@ function renderApplicationsPage(applications) {
   `;
 
 
+  setupSortControl(
+    '.application-toolbar',
+    'Application',
+    'Application',
+    'applicationSearch'
+  );
+
   window.applicationsData =
     applications;
 
@@ -3378,6 +3586,9 @@ function setupApplicationFilters() {
 function renderApplicationCards(
   applications
 ) {
+
+  applications =
+    sortRecords(applications, 'Application');
 
   const container =
     document.getElementById(
@@ -4503,7 +4714,7 @@ function submitApplication(event) {
       );
 
 
-      loadSection('Applications');
+      loadSection('Applications', true);
 
     })
 
@@ -5104,7 +5315,7 @@ function submitApplicationEdit(event) {
       );
 
 
-      loadSection('Applications');
+      loadSection('Applications', true);
 
     })
 
@@ -5203,7 +5414,7 @@ function deleteApplication(
       );
 
 
-      loadSection('Applications');
+      loadSection('Applications', true);
 
     })
 
@@ -5353,6 +5564,13 @@ function renderIndustriesPage(
   `;
 
 
+  setupSortControl(
+    '.industry-toolbar',
+    'Industry',
+    'Industry',
+    'industrySearch'
+  );
+
   window.industriesData =
     industries;
 
@@ -5494,6 +5712,9 @@ function setupIndustryFilters() {
 function renderIndustryCards(
   industries
 ) {
+
+  industries =
+    sortRecords(industries, 'Industry');
 
   const container =
     document.getElementById(
@@ -6707,7 +6928,8 @@ function submitIndustry(event) {
 
 
       loadSection(
-        'Industries'
+        'Industries',
+        true
       );
 
     })
@@ -7351,7 +7573,8 @@ function submitIndustryEdit(
 
 
       loadSection(
-        'Industries'
+        'Industries',
+        true
       );
 
     })
@@ -7456,7 +7679,8 @@ function deleteIndustryRecord(
 
 
       loadSection(
-        'Industries'
+        'Industries',
+        true
       );
 
     })
@@ -7605,6 +7829,13 @@ function renderCompetitorsPage(
   `;
 
 
+  setupSortControl(
+    '.competitor-toolbar',
+    'Competitor',
+    'Competitor',
+    'competitorSearch'
+  );
+
   window.competitorsData =
     competitors;
 
@@ -7744,6 +7975,9 @@ function setupCompetitorFilters() {
 function renderCompetitorCards(
   competitors
 ) {
+
+  competitors =
+    sortRecords(competitors, 'Competitor');
 
   const container =
     document.getElementById(
@@ -8961,7 +9195,8 @@ function submitCompetitor(event) {
       );
 
       loadSection(
-        'Competitors'
+        'Competitors',
+        true
       );
 
     })
@@ -9686,7 +9921,8 @@ function submitCompetitorEdit(
       );
 
       loadSection(
-        'Competitors'
+        'Competitors',
+        true
       );
 
     })
@@ -9771,7 +10007,8 @@ function confirmDeleteCompetitor(
       );
 
       loadSection(
-        'Competitors'
+        'Competitors',
+        true
       );
 
     })
@@ -9787,6 +10024,5961 @@ function confirmDeleteCompetitor(
 
     .deleteCompetitor(
       competitorId
+    );
+
+}
+
+/* =========================================================
+   CABLE KNOWLEDGE PAGE
+========================================================= */
+
+function renderCableKnowledgePage(
+  knowledge
+) {
+
+  const app =
+    document.getElementById('app');
+
+  const categories =
+    getUniqueValues(
+      knowledge,
+      'Category'
+    );
+
+  const levels =
+    getUniqueValues(
+      knowledge,
+      'Learning Level'
+    );
+
+  app.innerHTML = `
+
+    <div class="page-header section-header">
+
+      <div>
+
+        <h1 class="page-title">
+          Cable Knowledge
+        </h1>
+
+        <div class="page-description">
+          ${knowledge.length}
+          topic${knowledge.length === 1 ? '' : 's'}
+        </div>
+
+      </div>
+
+      <button
+        class="primary-button"
+        onclick="openAddKnowledgeModal()"
+      >
+        + Add Knowledge
+      </button>
+
+    </div>
+
+
+    <div class="knowledge-toolbar">
+
+      <div class="knowledge-search">
+
+        <span class="search-icon">
+          🔍
+        </span>
+
+        <input
+          id="knowledgeSearch"
+          class="search-box"
+          type="text"
+          placeholder="Search knowledge..."
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <select
+        id="knowledgeCategoryFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Categories
+        </option>
+
+        ${categories.map(function(value) {
+
+          return `
+            <option value="${escapeAttribute(value)}">
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+
+      <select
+        id="knowledgeLevelFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Levels
+        </option>
+
+        ${levels.map(function(value) {
+
+          return `
+            <option value="${escapeAttribute(value)}">
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+    </div>
+
+
+    <div
+      id="knowledgeResults"
+      class="knowledge-grid"
+    ></div>
+
+  `;
+
+
+  setupSortControl(
+    '.knowledge-toolbar',
+    'Topic',
+    'Topic',
+    'knowledgeSearch'
+  );
+
+  window.cableKnowledgeData =
+    knowledge;
+
+
+  renderKnowledgeCards(
+    knowledge
+  );
+
+
+  setupKnowledgeFilters();
+
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+function setupKnowledgeFilters() {
+
+  const search =
+    document.getElementById(
+      'knowledgeSearch'
+    );
+
+  const category =
+    document.getElementById(
+      'knowledgeCategoryFilter'
+    );
+
+  const level =
+    document.getElementById(
+      'knowledgeLevelFilter'
+    );
+
+
+  function applyFilters() {
+
+    const searchText =
+      search.value
+        .trim()
+        .toLowerCase();
+
+    const categoryValue =
+      category.value
+        .trim()
+        .toLowerCase();
+
+    const levelValue =
+      level.value
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+      window.cableKnowledgeData.filter(
+        function(item) {
+
+          const searchable =
+            Object.values(item)
+              .join(' ')
+              .toLowerCase();
+
+
+          return (
+
+            (!searchText ||
+              searchable.includes(
+                searchText
+              ))
+
+            &&
+
+            (!categoryValue ||
+              String(
+                item['Category'] || ''
+              )
+                .toLowerCase()
+                .includes(
+                  categoryValue
+                ))
+
+            &&
+
+            (!levelValue ||
+              String(
+                item['Learning Level'] || ''
+              )
+                .toLowerCase()
+                .includes(
+                  levelValue
+                ))
+
+          );
+
+        }
+      );
+
+
+    renderKnowledgeCards(
+      filtered
+    );
+
+  }
+
+
+  search.addEventListener(
+    'input',
+    applyFilters
+  );
+
+  category.addEventListener(
+    'change',
+    applyFilters
+  );
+
+  level.addEventListener(
+    'change',
+    applyFilters
+  );
+
+}
+
+
+/* =========================================================
+   KNOWLEDGE CARDS
+========================================================= */
+
+function renderKnowledgeCards(
+  knowledge
+) {
+
+  knowledge =
+    sortRecords(knowledge, 'Topic');
+
+  const container =
+    document.getElementById(
+      'knowledgeResults'
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!knowledge.length) {
+
+    container.innerHTML = `
+
+      <div class="empty-state">
+
+        <div class="empty-icon">
+          🔍
+        </div>
+
+        <div class="empty-title">
+          No knowledge found
+        </div>
+
+        <div>
+          Try changing your search or filters.
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    knowledge.map(function(item) {
+
+      return createKnowledgeCard(
+        item
+      );
+
+    }).join('');
+
+}
+
+
+/* =========================================================
+   KNOWLEDGE CARD
+========================================================= */
+
+function createKnowledgeCard(
+  item
+) {
+
+  const id =
+    item['Knowledge ID'] || '';
+
+  const topic =
+    item['Topic'] ||
+    item['Question'] ||
+    'Knowledge Topic';
+
+  const category =
+    item['Category'] || '';
+
+  const level =
+    item['Learning Level'] ||
+    'Basic';
+
+  const question =
+    item['Question'] || '';
+
+  const answer =
+    item['Answer'] || '';
+
+  const keyPoints =
+    item['Key Points'] || '';
+
+  const products =
+    item['Related Products'] || '';
+
+  const industries =
+    item['Related Industries'] || '';
+
+  const applications =
+    item['Related Applications'] || '';
+
+  const status =
+    item['Status'] || 'Active';
+
+
+  return `
+
+    <div class="knowledge-card">
+
+
+      <div class="knowledge-card-top">
+
+        <div class="knowledge-icon">
+          📚
+        </div>
+
+        <div class="knowledge-level">
+          ${escapeHtml(level)}
+        </div>
+
+      </div>
+
+
+      <div class="knowledge-id">
+        ${escapeHtml(id)}
+      </div>
+
+
+      <div class="knowledge-topic">
+        ${escapeHtml(topic)}
+      </div>
+
+
+      ${
+        category
+          ? `
+            <div class="knowledge-category">
+              ${escapeHtml(category)}
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="knowledge-info-list">
+
+
+        ${
+          question
+            ? `
+              <div>
+
+                <span>
+                  Question
+                </span>
+
+                <b>
+                  ${escapeHtml(question)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          keyPoints
+            ? `
+              <div>
+
+                <span>
+                  Key Points
+                </span>
+
+                <b>
+                  ${escapeHtml(keyPoints)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          products
+            ? `
+              <div>
+
+                <span>
+                  Products
+                </span>
+
+                <b>
+                  ${escapeHtml(products)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          industries
+            ? `
+              <div>
+
+                <span>
+                  Industries
+                </span>
+
+                <b>
+                  ${escapeHtml(industries)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+      </div>
+
+
+      ${
+        answer
+          ? `
+            <div class="knowledge-answer">
+
+              <span>
+                Answer
+              </span>
+
+              <div>
+                ${escapeHtml(answer)}
+              </div>
+
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="knowledge-card-footer">
+
+        <button
+          class="view-product-button"
+          onclick="viewKnowledge(
+            '${escapeAttribute(id)}'
+          )"
+        >
+          View Details →
+        </button>
+
+      </div>
+
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   VIEW KNOWLEDGE
+========================================================= */
+
+function viewKnowledge(
+  knowledgeId
+) {
+
+  const item =
+    (window.cableKnowledgeData || [])
+      .find(function(row) {
+
+        return String(
+          row['Knowledge ID'] || ''
+        ) ===
+        String(knowledgeId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Knowledge not found.'
+    );
+
+    return;
+
+  }
+
+
+  openKnowledgeDetails(
+    item
+  );
+
+}
+
+
+/* =========================================================
+   DETAILS
+========================================================= */
+
+function openKnowledgeDetails(
+  item
+) {
+
+  const old =
+    document.getElementById(
+      'knowledgeDetailsModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'knowledgeDetailsModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  const id =
+    item['Knowledge ID'] || '';
+
+  const topic =
+    item['Topic'] ||
+    item['Question'] ||
+    'Knowledge Details';
+
+
+  modal.innerHTML = `
+
+    <div class="modal knowledge-details-modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            ${escapeHtml(topic)}
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(id)}
+          </div>
+
+        </div>
+
+
+        <div class="knowledge-detail-actions">
+
+          <button
+            class="edit-product-button"
+            onclick="editKnowledge(
+              '${escapeAttribute(id)}'
+            )"
+          >
+            ✏️ Edit
+          </button>
+
+
+          <button
+            class="delete-product-button"
+            onclick="confirmDeleteKnowledge(
+              '${escapeAttribute(id)}'
+            )"
+          >
+            🗑️ Delete
+          </button>
+
+
+          <button
+            class="modal-close"
+            onclick="closeKnowledgeDetails()"
+          >
+            ×
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="knowledge-details-body">
+
+
+        ${createKnowledgeDetailSection(
+          '📚 Basic Information',
+          [
+            [
+              'Knowledge ID',
+              item['Knowledge ID']
+            ],
+            [
+              'Topic',
+              item['Topic']
+            ],
+            [
+              'Category',
+              item['Category']
+            ],
+            [
+              'Sub Category',
+              item['Sub Category']
+            ],
+            [
+              'Learning Level',
+              item['Learning Level']
+            ],
+            [
+              'Status',
+              item['Status']
+            ]
+          ]
+        )}
+
+
+        ${createKnowledgeDetailText(
+          '❓ Question',
+          item['Question']
+        )}
+
+
+        ${createKnowledgeDetailText(
+          '💡 Answer',
+          item['Answer']
+        )}
+
+
+        ${createKnowledgeDetailText(
+          '📌 Key Points',
+          item['Key Points']
+        )}
+
+
+        ${createKnowledgeDetailText(
+          '💼 Sales Relevance',
+          item['Sales Relevance']
+        )}
+
+
+        ${createKnowledgeDetailSection(
+          '🔗 Related Information',
+          [
+            [
+              'Related Products',
+              item['Related Products']
+            ],
+            [
+              'Related Applications',
+              item['Related Applications']
+            ],
+            [
+              'Related Industries',
+              item['Related Industries']
+            ]
+          ]
+        )}
+
+
+        ${createKnowledgeDetailSection(
+          '📄 Document & Source',
+          [
+            [
+              'Document Link',
+              item['Document Link']
+            ],
+            [
+              'Source',
+              item['Source']
+            ]
+          ]
+        )}
+
+
+        ${createKnowledgeDetailSection(
+          '🕒 Last Updated',
+          [
+            [
+              'Last Updated',
+              item['Last Updated']
+            ]
+          ]
+        )}
+
+      </div>
+
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   DETAIL SECTION
+========================================================= */
+
+function createKnowledgeDetailSection(
+  title,
+  fields
+) {
+
+  const valid =
+    fields.filter(function(field) {
+
+      return String(
+        field[1] || ''
+      ).trim() !== '';
+
+    });
+
+
+  if (!valid.length) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+
+      <div class="detail-grid">
+
+        ${valid.map(function(field) {
+
+          return `
+
+            <div class="detail-item">
+
+              <div class="detail-label">
+                ${escapeHtml(field[0])}
+              </div>
+
+              <div class="detail-value">
+                ${formatCell(field[1])}
+              </div>
+
+            </div>
+
+          `;
+
+        }).join('')}
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   DETAIL TEXT
+========================================================= */
+
+function createKnowledgeDetailText(
+  title,
+  value
+) {
+
+  if (
+    !value ||
+    String(value).trim() === ''
+  ) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+      <div class="detail-text">
+        ${formatCell(value)}
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   CLOSE DETAILS
+========================================================= */
+
+function closeKnowledgeDetails() {
+
+  const modal =
+    document.getElementById(
+      'knowledgeDetailsModal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   ADD KNOWLEDGE MODAL
+========================================================= */
+
+function openAddKnowledgeModal() {
+
+  const old =
+    document.getElementById(
+      'knowledgeModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'knowledgeModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Add Knowledge
+          </div>
+
+          <div class="modal-subtitle">
+            Add a new cable knowledge topic
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeKnowledgeModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="addKnowledgeForm"
+        onsubmit="submitKnowledge(event)"
+      >
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+            <span>📚</span>
+            Basic Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Topic *
+            </label>
+
+            <input
+              type="text"
+              name="topic"
+              required
+              placeholder="e.g. Cable Voltage"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Category
+            </label>
+
+            <input
+              type="text"
+              name="category"
+              placeholder="e.g. Basic Cable Knowledge"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Sub Category
+            </label>
+
+            <input
+              type="text"
+              name="subCategory"
+              placeholder="e.g. Voltage"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Learning Level
+            </label>
+
+            <select name="learningLevel">
+
+              <option value="Basic">
+                Basic
+              </option>
+
+              <option value="Intermediate">
+                Intermediate
+              </option>
+
+              <option value="Advanced">
+                Advanced
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>❓</span>
+            Question & Answer
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Question *
+            </label>
+
+            <textarea
+              name="question"
+              rows="3"
+              required
+              placeholder="e.g. What is cable voltage rating?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Answer *
+            </label>
+
+            <textarea
+              name="answer"
+              rows="5"
+              required
+              placeholder="Enter the explanation..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📌</span>
+            Key Learning
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Points
+            </label>
+
+            <textarea
+              name="keyPoints"
+              rows="4"
+              placeholder="Important points to remember..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Sales Relevance
+            </label>
+
+            <textarea
+              name="salesRelevance"
+              rows="3"
+              placeholder="How does this help in sales?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🔗</span>
+            Related Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              placeholder="LV/MV Power Cables..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Applications
+            </label>
+
+            <input
+              type="text"
+              name="relatedApplications"
+              placeholder="Power Distribution..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Industries
+            </label>
+
+            <input
+              type="text"
+              name="relatedIndustries"
+              placeholder="Power; Infrastructure..."
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📄</span>
+            Documents & Source
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Source
+            </label>
+
+            <input
+              type="text"
+              name="source"
+              placeholder="Source / reference"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Document Link
+            </label>
+
+            <input
+              type="text"
+              name="documentLink"
+              placeholder="https://..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option value="Active">
+                Active
+              </option>
+
+              <option value="Inactive">
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeKnowledgeModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="saveKnowledgeButton"
+          >
+            Save Knowledge
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   CLOSE MODAL
+========================================================= */
+
+function closeKnowledgeModal() {
+
+  const modal =
+    document.getElementById(
+      'knowledgeModal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT ADD
+========================================================= */
+
+function submitKnowledge(event) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'addKnowledgeForm'
+    );
+
+  const button =
+    document.getElementById(
+      'saveKnowledgeButton'
+    );
+
+
+  const data =
+    new FormData(form);
+
+
+  const knowledge = {
+
+    topic:
+      data.get('topic'),
+
+    category:
+      data.get('category'),
+
+    subCategory:
+      data.get('subCategory'),
+
+    question:
+      data.get('question'),
+
+    answer:
+      data.get('answer'),
+
+    keyPoints:
+      data.get('keyPoints'),
+
+    salesRelevance:
+      data.get('salesRelevance'),
+
+    learningLevel:
+      data.get('learningLevel'),
+
+    relatedProducts:
+      data.get('relatedProducts'),
+
+    relatedApplications:
+      data.get('relatedApplications'),
+
+    relatedIndustries:
+      data.get('relatedIndustries'),
+
+    documentLink:
+      data.get('documentLink'),
+
+    source:
+      data.get('source'),
+
+    status:
+      data.get('status')
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeKnowledgeModal();
+
+      showSuccessMessage(
+        'Knowledge ' +
+        result.knowledgeId +
+        ' added successfully.'
+      );
+
+      loadSection(
+        'Cable Knowledge',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Knowledge';
+
+      alert(
+        error.message ||
+        'Unable to save knowledge.'
+      );
+
+    })
+
+    .addKnowledge(
+      knowledge
+    );
+
+}
+
+
+/* =========================================================
+   EDIT KNOWLEDGE
+========================================================= */
+
+function editKnowledge(
+  knowledgeId
+) {
+
+  const item =
+    (window.cableKnowledgeData || [])
+      .find(function(row) {
+
+        return String(
+          row['Knowledge ID'] || ''
+        ) ===
+        String(knowledgeId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Knowledge not found.'
+    );
+
+    return;
+
+  }
+
+
+  window.editingKnowledgeId =
+    item['Knowledge ID'];
+
+
+  closeKnowledgeDetails();
+
+  openEditKnowledgeModal(
+    item
+  );
+
+}
+
+/* =========================================================
+   EDIT MODAL
+========================================================= */
+
+function openEditKnowledgeModal(
+  item
+) {
+
+  const old =
+    document.getElementById(
+      'knowledgeModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'knowledgeModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Edit Knowledge
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(
+              item['Knowledge ID'] || ''
+            )}
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeKnowledgeModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="editKnowledgeForm"
+        onsubmit="submitKnowledgeEdit(event)"
+      >
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+            <span>📚</span>
+            Basic Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Topic *
+            </label>
+
+            <input
+              type="text"
+              name="topic"
+              required
+              value="${escapeAttribute(
+                item['Topic'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Category
+            </label>
+
+            <input
+              type="text"
+              name="category"
+              value="${escapeAttribute(
+                item['Category'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Sub Category
+            </label>
+
+            <input
+              type="text"
+              name="subCategory"
+              value="${escapeAttribute(
+                item['Sub Category'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Learning Level
+            </label>
+
+            <select name="learningLevel">
+
+              <option
+                value="Basic"
+                ${item['Learning Level'] === 'Basic'
+                  ? 'selected'
+                  : ''}
+              >
+                Basic
+              </option>
+
+              <option
+                value="Intermediate"
+                ${item['Learning Level'] === 'Intermediate'
+                  ? 'selected'
+                  : ''}
+              >
+                Intermediate
+              </option>
+
+              <option
+                value="Advanced"
+                ${item['Learning Level'] === 'Advanced'
+                  ? 'selected'
+                  : ''}
+              >
+                Advanced
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>❓</span>
+            Question & Answer
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Question *
+            </label>
+
+            <textarea
+              name="question"
+              rows="3"
+              required
+            >${escapeHtml(
+              item['Question'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Answer *
+            </label>
+
+            <textarea
+              name="answer"
+              rows="5"
+              required
+            >${escapeHtml(
+              item['Answer'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📌</span>
+            Key Learning
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Points
+            </label>
+
+            <textarea
+              name="keyPoints"
+              rows="4"
+            >${escapeHtml(
+              item['Key Points'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Sales Relevance
+            </label>
+
+            <textarea
+              name="salesRelevance"
+              rows="3"
+            >${escapeHtml(
+              item['Sales Relevance'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🔗</span>
+            Related Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              value="${escapeAttribute(
+                item['Related Products'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Applications
+            </label>
+
+            <input
+              type="text"
+              name="relatedApplications"
+              value="${escapeAttribute(
+                item['Related Applications'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Industries
+            </label>
+
+            <input
+              type="text"
+              name="relatedIndustries"
+              value="${escapeAttribute(
+                item['Related Industries'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📄</span>
+            Documents & Source
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Source
+            </label>
+
+            <input
+              type="text"
+              name="source"
+              value="${escapeAttribute(
+                item['Source'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Document Link
+            </label>
+
+            <input
+              type="text"
+              name="documentLink"
+              value="${escapeAttribute(
+                item['Document Link'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option
+                value="Active"
+                ${item['Status'] === 'Active'
+                  ? 'selected'
+                  : ''}
+              >
+                Active
+              </option>
+
+              <option
+                value="Inactive"
+                ${item['Status'] === 'Inactive'
+                  ? 'selected'
+                  : ''}
+              >
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeKnowledgeModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="updateKnowledgeButton"
+          >
+            Save Changes
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   SUBMIT EDIT
+========================================================= */
+
+function submitKnowledgeEdit(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'editKnowledgeForm'
+    );
+
+  const button =
+    document.getElementById(
+      'updateKnowledgeButton'
+    );
+
+
+  const knowledgeId =
+    window.editingKnowledgeId;
+
+
+  if (!knowledgeId) {
+
+    alert(
+      'Knowledge ID not found.'
+    );
+
+    return;
+
+  }
+
+
+  const knowledge = {
+
+    topic:
+      form.topic.value,
+
+    category:
+      form.category.value,
+
+    subCategory:
+      form.subCategory.value,
+
+    question:
+      form.question.value,
+
+    answer:
+      form.answer.value,
+
+    keyPoints:
+      form.keyPoints.value,
+
+    salesRelevance:
+      form.salesRelevance.value,
+
+    learningLevel:
+      form.learningLevel.value,
+
+    relatedProducts:
+      form.relatedProducts.value,
+
+    relatedApplications:
+      form.relatedApplications.value,
+
+    relatedIndustries:
+      form.relatedIndustries.value,
+
+    documentLink:
+      form.documentLink.value,
+
+    source:
+      form.source.value,
+
+    status:
+      form.status.value
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function() {
+
+      window.editingKnowledgeId =
+        null;
+
+      closeKnowledgeModal();
+
+      showSuccessMessage(
+        'Knowledge updated successfully.'
+      );
+
+      loadSection(
+        'Cable Knowledge',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Changes';
+
+      alert(
+        error.message ||
+        'Unable to update knowledge.'
+      );
+
+    })
+
+    .updateKnowledge(
+      knowledgeId,
+      knowledge
+    );
+
+}
+
+function confirmDeleteKnowledge(
+  knowledgeId
+) {
+
+  const item =
+    (window.cableKnowledgeData || [])
+      .find(function(row) {
+
+        return String(
+          row['Knowledge ID'] || ''
+        ) ===
+        String(knowledgeId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Knowledge not found.'
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    confirm(
+      'Delete this knowledge topic?\n\n' +
+      (
+        item['Topic'] ||
+        item['Question'] ||
+        ''
+      ) +
+      '\n' +
+      knowledgeId +
+      '\n\n' +
+      'This will permanently remove it from the Cable Knowledge sheet.'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeKnowledgeDetails();
+
+      showSuccessMessage(
+        'Knowledge ' +
+        result.knowledgeId +
+        ' deleted successfully.'
+      );
+
+      loadSection(
+        'Cable Knowledge',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      alert(
+        error.message ||
+        'Unable to delete knowledge.'
+      );
+
+    })
+
+    .deleteKnowledge(
+      knowledgeId
+    );
+
+}
+
+/* =========================================================
+   LEARNING PAGE
+========================================================= */
+
+function renderLearningPage(
+  learning
+) {
+
+  const app =
+    document.getElementById('app');
+
+  const categories =
+    getUniqueValues(
+      learning,
+      'Category'
+    );
+
+  const levels =
+    getUniqueValues(
+      learning,
+      'Learning Level'
+    );
+
+  app.innerHTML = `
+
+    <div class="page-header section-header">
+
+      <div>
+
+        <h1 class="page-title">
+          Learning
+        </h1>
+
+        <div class="page-description">
+          ${learning.length}
+          learning topic${learning.length === 1 ? '' : 's'}
+        </div>
+
+      </div>
+
+      <button
+        class="primary-button"
+        onclick="openAddLearningModal()"
+      >
+        + Add Learning
+      </button>
+
+    </div>
+
+
+    <div class="learning-toolbar">
+
+      <div class="learning-search">
+
+        <span class="search-icon">
+          🔍
+        </span>
+
+        <input
+          id="learningSearch"
+          class="search-box"
+          type="text"
+          placeholder="Search learning..."
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <select
+        id="learningCategoryFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Categories
+        </option>
+
+        ${categories.map(function(value) {
+
+          return `
+            <option
+              value="${escapeAttribute(value)}"
+            >
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+
+      <select
+        id="learningLevelFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Levels
+        </option>
+
+        ${levels.map(function(value) {
+
+          return `
+            <option
+              value="${escapeAttribute(value)}"
+            >
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+    </div>
+
+
+    <div
+      id="learningResults"
+      class="learning-grid"
+    ></div>
+
+  `;
+
+
+  setupSortControl(
+    '.learning-toolbar',
+    'Topic',
+    'Topic',
+    'learningSearch'
+  );
+
+  window.learningData =
+    learning;
+
+
+  renderLearningCards(
+    learning
+  );
+
+
+  setupLearningFilters();
+
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+function setupLearningFilters() {
+
+  const search =
+    document.getElementById(
+      'learningSearch'
+    );
+
+  const category =
+    document.getElementById(
+      'learningCategoryFilter'
+    );
+
+  const level =
+    document.getElementById(
+      'learningLevelFilter'
+    );
+
+
+  function applyFilters() {
+
+    const searchText =
+      search.value
+        .trim()
+        .toLowerCase();
+
+    const categoryValue =
+      category.value
+        .trim()
+        .toLowerCase();
+
+    const levelValue =
+      level.value
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+      window.learningData.filter(
+        function(item) {
+
+          const searchable =
+            Object.values(item)
+              .join(' ')
+              .toLowerCase();
+
+          return (
+
+            (!searchText ||
+              searchable.includes(
+                searchText
+              ))
+
+            &&
+
+            (!categoryValue ||
+              String(
+                item['Category'] || ''
+              )
+                .toLowerCase()
+                .includes(
+                  categoryValue
+                ))
+
+            &&
+
+            (!levelValue ||
+              String(
+                item['Learning Level'] || ''
+              )
+                .toLowerCase()
+                .includes(
+                  levelValue
+                ))
+
+          );
+
+        }
+      );
+
+
+    renderLearningCards(
+      filtered
+    );
+
+  }
+
+
+  search.addEventListener(
+    'input',
+    applyFilters
+  );
+
+  category.addEventListener(
+    'change',
+    applyFilters
+  );
+
+  level.addEventListener(
+    'change',
+    applyFilters
+  );
+
+}
+
+
+/* =========================================================
+   LEARNING CARDS
+========================================================= */
+
+function renderLearningCards(
+  learning
+) {
+
+  learning =
+    sortRecords(learning, 'Topic');
+
+  const container =
+    document.getElementById(
+      'learningResults'
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!learning.length) {
+
+    container.innerHTML = `
+
+      <div class="empty-state">
+
+        <div class="empty-icon">
+          🔍
+        </div>
+
+        <div class="empty-title">
+          No learning topics found
+        </div>
+
+        <div>
+          Try changing your search or filters.
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    learning.map(function(item) {
+
+      return createLearningCard(
+        item
+      );
+
+    }).join('');
+
+}
+
+
+/* =========================================================
+   LEARNING CARD
+========================================================= */
+
+function createLearningCard(
+  item
+) {
+
+  const id =
+    item['Learning ID'] || '';
+
+  const topic =
+    item['Topic'] ||
+    'Learning Topic';
+
+  const category =
+    item['Category'] || '';
+
+  const level =
+    item['Learning Level'] ||
+    'Beginner';
+
+  const whatToLearn =
+    item['What to Learn'] || '';
+
+  const whyItMatters =
+    item['Why It Matters'] || '';
+
+  const keyConcepts =
+    item['Key Concepts'] || '';
+
+  const practicalExample =
+    item['Practical Example'] || '';
+
+  const salesApplication =
+    item['Sales Application'] || '';
+
+
+  return `
+
+    <div class="learning-card">
+
+
+      <div class="learning-card-top">
+
+        <div class="learning-icon">
+          🧠
+        </div>
+
+
+        <div class="learning-level">
+          ${escapeHtml(level)}
+        </div>
+
+      </div>
+
+
+      <div class="learning-id">
+        ${escapeHtml(id)}
+      </div>
+
+
+      <div class="learning-topic">
+        ${escapeHtml(topic)}
+      </div>
+
+
+      ${
+        category
+          ? `
+            <div class="learning-category">
+              ${escapeHtml(category)}
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="learning-info-list">
+
+
+        ${
+          whatToLearn
+            ? `
+              <div>
+
+                <span>
+                  Learn
+                </span>
+
+                <b>
+                  ${escapeHtml(whatToLearn)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          keyConcepts
+            ? `
+              <div>
+
+                <span>
+                  Concepts
+                </span>
+
+                <b>
+                  ${escapeHtml(keyConcepts)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          practicalExample
+            ? `
+              <div>
+
+                <span>
+                  Example
+                </span>
+
+                <b>
+                  ${escapeHtml(practicalExample)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+      </div>
+
+
+      ${
+        whyItMatters
+          ? `
+            <div class="learning-why">
+
+              <span>
+                Why It Matters
+              </span>
+
+              <div>
+                ${escapeHtml(whyItMatters)}
+              </div>
+
+            </div>
+          `
+          : ''
+      }
+
+
+      ${
+        salesApplication
+          ? `
+            <div class="learning-sales">
+
+              <span>
+                Sales Application
+              </span>
+
+              <div>
+                ${escapeHtml(salesApplication)}
+              </div>
+
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="learning-card-footer">
+
+        <button
+          class="view-product-button"
+          onclick="viewLearning(
+            '${escapeAttribute(id)}'
+          )"
+        >
+          View Details →
+        </button>
+
+      </div>
+
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   VIEW LEARNING
+========================================================= */
+
+function viewLearning(
+  learningId
+) {
+
+  const item =
+    (window.learningData || [])
+      .find(function(row) {
+
+        return String(
+          row['Learning ID'] || ''
+        ) ===
+        String(learningId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Learning record not found.'
+    );
+
+    return;
+
+  }
+
+
+  openLearningDetails(
+    item
+  );
+
+}
+
+
+/* =========================================================
+   LEARNING DETAILS
+========================================================= */
+
+function openLearningDetails(
+  item
+) {
+
+  const old =
+    document.getElementById(
+      'learningDetailsModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'learningDetailsModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  const id =
+    item['Learning ID'] || '';
+
+  const topic =
+    item['Topic'] ||
+    'Learning Details';
+
+
+  modal.innerHTML = `
+
+    <div class="modal learning-details-modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            ${escapeHtml(topic)}
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(id)}
+          </div>
+
+        </div>
+
+
+        <div class="learning-detail-actions">
+
+
+          <button
+            class="edit-product-button"
+            onclick="editLearning(
+              '${escapeAttribute(id)}'
+            )"
+          >
+            ✏️ Edit
+          </button>
+
+
+          <button
+            class="delete-product-button"
+            onclick="confirmDeleteLearning(
+              '${escapeAttribute(id)}'
+            )"
+          >
+            🗑️ Delete
+          </button>
+
+
+          <button
+            class="modal-close"
+            onclick="closeLearningDetails()"
+          >
+            ×
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="learning-details-body">
+
+
+        ${createLearningDetailSection(
+          '📚 Basic Information',
+          [
+            [
+              'Learning ID',
+              item['Learning ID']
+            ],
+            [
+              'Topic',
+              item['Topic']
+            ],
+            [
+              'Category',
+              item['Category']
+            ],
+            [
+              'Sub Category',
+              item['Sub Category']
+            ],
+            [
+              'Learning Level',
+              item['Learning Level']
+            ],
+            [
+              'Status',
+              item['Status']
+            ]
+          ]
+        )}
+
+
+        ${createLearningDetailText(
+          '📖 What to Learn',
+          item['What to Learn']
+        )}
+
+
+        ${createLearningDetailText(
+          '💡 Why It Matters',
+          item['Why It Matters']
+        )}
+
+
+        ${createLearningDetailText(
+          '📌 Key Concepts',
+          item['Key Concepts']
+        )}
+
+
+        ${createLearningDetailText(
+          '🧪 Practical Example',
+          item['Practical Example']
+        )}
+
+
+        ${createLearningDetailText(
+          '💼 Sales Application',
+          item['Sales Application']
+        )}
+
+
+        ${createLearningDetailText(
+          '❓ Questions to Practice',
+          item['Questions to Practice']
+        )}
+
+
+        ${createLearningDetailSection(
+          '🔗 Related Information',
+          [
+            [
+              'Related Products',
+              item['Related Products']
+            ],
+            [
+              'Related Industries',
+              item['Related Industries']
+            ]
+          ]
+        )}
+
+
+        ${createLearningDetailSection(
+          '🕒 Record Information',
+          [
+            [
+              'Status',
+              item['Status']
+            ],
+            [
+              'Last Updated',
+              item['Last Updated']
+            ]
+          ]
+        )}
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   DETAIL SECTION
+========================================================= */
+
+function createLearningDetailSection(
+  title,
+  fields
+) {
+
+  const valid =
+    fields.filter(function(field) {
+
+      return String(
+        field[1] || ''
+      ).trim() !== '';
+
+    });
+
+
+  if (!valid.length) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+
+      <div class="detail-grid">
+
+        ${valid.map(function(field) {
+
+          return `
+
+            <div class="detail-item">
+
+              <div class="detail-label">
+                ${escapeHtml(field[0])}
+              </div>
+
+              <div class="detail-value">
+                ${formatCell(field[1])}
+              </div>
+
+            </div>
+
+          `;
+
+        }).join('')}
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   DETAIL TEXT
+========================================================= */
+
+function createLearningDetailText(
+  title,
+  value
+) {
+
+  if (
+    !value ||
+    String(value).trim() === ''
+  ) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+      <div class="detail-text">
+        ${formatCell(value)}
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   CLOSE DETAILS
+========================================================= */
+
+function closeLearningDetails() {
+
+  const modal =
+    document.getElementById(
+      'learningDetailsModal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   ADD LEARNING MODAL
+========================================================= */
+
+function openAddLearningModal() {
+
+  const old =
+    document.getElementById(
+      'learningModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'learningModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Add Learning
+          </div>
+
+          <div class="modal-subtitle">
+            Add a new learning topic
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeLearningModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="addLearningForm"
+        onsubmit="submitLearning(event)"
+      >
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+            <span>🧠</span>
+            Basic Learning Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Topic *
+            </label>
+
+            <input
+              type="text"
+              name="topic"
+              required
+              placeholder="e.g. Cable Sizing"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Category
+            </label>
+
+            <input
+              type="text"
+              name="category"
+              placeholder="Technical / Sales / Products"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Sub Category
+            </label>
+
+            <input
+              type="text"
+              name="subCategory"
+              placeholder="e.g. Cable Selection"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Learning Level
+            </label>
+
+            <select name="learningLevel">
+
+              <option value="Beginner">
+                Beginner
+              </option>
+
+              <option value="Intermediate">
+                Intermediate
+              </option>
+
+              <option value="Advanced">
+                Advanced
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📖</span>
+            What You Need to Learn
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              What to Learn
+            </label>
+
+            <textarea
+              name="whatToLearn"
+              rows="4"
+              placeholder="What should you learn?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Why It Matters
+            </label>
+
+            <textarea
+              name="whyItMatters"
+              rows="4"
+              placeholder="Why is this important?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📌</span>
+            Key Learning
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Concepts
+            </label>
+
+            <textarea
+              name="keyConcepts"
+              rows="4"
+              placeholder="Important concepts to remember..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Practical Example
+            </label>
+
+            <textarea
+              name="practicalExample"
+              rows="4"
+              placeholder="Give a practical example..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>💼</span>
+            Sales Application
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Sales Application
+            </label>
+
+            <textarea
+              name="salesApplication"
+              rows="4"
+              placeholder="How can this knowledge help in sales?"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Questions to Practice
+            </label>
+
+            <textarea
+              name="questionsToPractice"
+              rows="4"
+              placeholder="Questions you should be able to answer..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🔗</span>
+            Related Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              placeholder="LV/MV Power Cables..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Industries
+            </label>
+
+            <input
+              type="text"
+              name="relatedIndustries"
+              placeholder="Power; Oil & Gas..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option value="Active">
+                Active
+              </option>
+
+              <option value="Inactive">
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeLearningModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="saveLearningButton"
+          >
+            Save Learning
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+
+  setTimeout(function() {
+
+    const input =
+      modal.querySelector(
+        'input[name="topic"]'
+      );
+
+    if (input) {
+      input.focus();
+    }
+
+  }, 50);
+
+}
+
+
+/* =========================================================
+   CLOSE MODAL
+========================================================= */
+
+function closeLearningModal() {
+
+  const modal =
+    document.getElementById(
+      'learningModal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT ADD
+========================================================= */
+
+function submitLearning(event) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'addLearningForm'
+    );
+
+  const button =
+    document.getElementById(
+      'saveLearningButton'
+    );
+
+
+  const data =
+    new FormData(form);
+
+
+  const learning = {
+
+    topic:
+      data.get('topic'),
+
+    category:
+      data.get('category'),
+
+    subCategory:
+      data.get('subCategory'),
+
+    whatToLearn:
+      data.get('whatToLearn'),
+
+    whyItMatters:
+      data.get('whyItMatters'),
+
+    keyConcepts:
+      data.get('keyConcepts'),
+
+    practicalExample:
+      data.get('practicalExample'),
+
+    salesApplication:
+      data.get('salesApplication'),
+
+    questionsToPractice:
+      data.get('questionsToPractice'),
+
+    relatedProducts:
+      data.get('relatedProducts'),
+
+    relatedIndustries:
+      data.get('relatedIndustries'),
+
+    learningLevel:
+      data.get('learningLevel'),
+
+    status:
+      data.get('status')
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeLearningModal();
+
+      showSuccessMessage(
+        'Learning ' +
+        result.learningId +
+        ' added successfully.'
+      );
+
+      loadSection(
+        'Learning',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Learning';
+
+      alert(
+        error.message ||
+        'Unable to save learning.'
+      );
+
+    })
+
+    .addLearning(
+      learning
+    );
+
+}
+
+
+/* =========================================================
+   EDIT LEARNING
+========================================================= */
+
+function editLearning(
+  learningId
+) {
+
+  const item =
+    (window.learningData || [])
+      .find(function(row) {
+
+        return String(
+          row['Learning ID'] || ''
+        ) ===
+        String(learningId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Learning record not found.'
+    );
+
+    return;
+
+  }
+
+
+  window.editingLearningId =
+    item['Learning ID'];
+
+
+  closeLearningDetails();
+
+
+  openEditLearningModal(
+    item
+  );
+
+}
+
+
+/* =========================================================
+   EDIT MODAL
+========================================================= */
+
+function openEditLearningModal(
+  item
+) {
+
+  const old =
+    document.getElementById(
+      'learningModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'learningModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Edit Learning
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(
+              item['Learning ID'] || ''
+            )}
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeLearningModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="editLearningForm"
+        onsubmit="submitLearningEdit(event)"
+      >
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+            <span>🧠</span>
+            Basic Learning Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Topic *
+            </label>
+
+            <input
+              type="text"
+              name="topic"
+              required
+              value="${escapeAttribute(
+                item['Topic'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Category
+            </label>
+
+            <input
+              type="text"
+              name="category"
+              value="${escapeAttribute(
+                item['Category'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Sub Category
+            </label>
+
+            <input
+              type="text"
+              name="subCategory"
+              value="${escapeAttribute(
+                item['Sub Category'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Learning Level
+            </label>
+
+            <select name="learningLevel">
+
+              <option
+                value="Beginner"
+                ${item['Learning Level'] === 'Beginner'
+                  ? 'selected'
+                  : ''}
+              >
+                Beginner
+              </option>
+
+              <option
+                value="Intermediate"
+                ${item['Learning Level'] === 'Intermediate'
+                  ? 'selected'
+                  : ''}
+              >
+                Intermediate
+              </option>
+
+              <option
+                value="Advanced"
+                ${item['Learning Level'] === 'Advanced'
+                  ? 'selected'
+                  : ''}
+              >
+                Advanced
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📖</span>
+            What You Need to Learn
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              What to Learn
+            </label>
+
+            <textarea
+              name="whatToLearn"
+              rows="4"
+            >${escapeHtml(
+              item['What to Learn'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Why It Matters
+            </label>
+
+            <textarea
+              name="whyItMatters"
+              rows="4"
+            >${escapeHtml(
+              item['Why It Matters'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>📌</span>
+            Key Learning
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Key Concepts
+            </label>
+
+            <textarea
+              name="keyConcepts"
+              rows="4"
+            >${escapeHtml(
+              item['Key Concepts'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Practical Example
+            </label>
+
+            <textarea
+              name="practicalExample"
+              rows="4"
+            >${escapeHtml(
+              item['Practical Example'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>💼</span>
+            Sales Application
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Sales Application
+            </label>
+
+            <textarea
+              name="salesApplication"
+              rows="4"
+            >${escapeHtml(
+              item['Sales Application'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Questions to Practice
+            </label>
+
+            <textarea
+              name="questionsToPractice"
+              rows="4"
+            >${escapeHtml(
+              item['Questions to Practice'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🔗</span>
+            Related Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              value="${escapeAttribute(
+                item['Related Products'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Industries
+            </label>
+
+            <input
+              type="text"
+              name="relatedIndustries"
+              value="${escapeAttribute(
+                item['Related Industries'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option
+                value="Active"
+                ${item['Status'] === 'Active'
+                  ? 'selected'
+                  : ''}
+              >
+                Active
+              </option>
+
+              <option
+                value="Inactive"
+                ${item['Status'] === 'Inactive'
+                  ? 'selected'
+                  : ''}
+              >
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeLearningModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="updateLearningButton"
+          >
+            Save Changes
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   SUBMIT EDIT
+========================================================= */
+
+function submitLearningEdit(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'editLearningForm'
+    );
+
+  const button =
+    document.getElementById(
+      'updateLearningButton'
+    );
+
+
+  const learningId =
+    window.editingLearningId;
+
+
+  if (!learningId) {
+
+    alert(
+      'Learning ID not found.'
+    );
+
+    return;
+
+  }
+
+
+  const learning = {
+
+    topic:
+      form.topic.value,
+
+    category:
+      form.category.value,
+
+    subCategory:
+      form.subCategory.value,
+
+    whatToLearn:
+      form.whatToLearn.value,
+
+    whyItMatters:
+      form.whyItMatters.value,
+
+    keyConcepts:
+      form.keyConcepts.value,
+
+    practicalExample:
+      form.practicalExample.value,
+
+    salesApplication:
+      form.salesApplication.value,
+
+    questionsToPractice:
+      form.questionsToPractice.value,
+
+    relatedProducts:
+      form.relatedProducts.value,
+
+    relatedIndustries:
+      form.relatedIndustries.value,
+
+    learningLevel:
+      form.learningLevel.value,
+
+    status:
+      form.status.value
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function() {
+
+      window.editingLearningId =
+        null;
+
+      closeLearningModal();
+
+      showSuccessMessage(
+        'Learning updated successfully.'
+      );
+
+      loadSection(
+        'Learning',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Changes';
+
+      alert(
+        error.message ||
+        'Unable to update learning.'
+      );
+
+    })
+
+    .updateLearning(
+      learningId,
+      learning
+    );
+
+}
+
+
+/* =========================================================
+   DELETE CONFIRMATION
+========================================================= */
+
+function confirmDeleteLearning(
+  learningId
+) {
+
+  const item =
+    (window.learningData || [])
+      .find(function(row) {
+
+        return String(
+          row['Learning ID'] || ''
+        ) ===
+        String(learningId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Learning record not found.'
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    confirm(
+      'Delete this learning topic?\n\n' +
+      (
+        item['Topic'] || ''
+      ) +
+      '\n' +
+      learningId +
+      '\n\n' +
+      'This will permanently remove it from the Learning sheet.'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeLearningDetails();
+
+      showSuccessMessage(
+        'Learning ' +
+        result.learningId +
+        ' deleted successfully.'
+      );
+
+      loadSection(
+        'Learning',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      alert(
+        error.message ||
+        'Unable to delete learning.'
+      );
+
+    })
+
+    .deleteLearning(
+      learningId
+    );
+
+}
+
+function renderCareerGrowthPage(careers) {
+  const app = document.getElementById('app');
+
+  const categories = getUniqueValues(careers, 'Category');
+  const levels = getUniqueValues(careers, 'Learning Level');
+  const subCategories = getUniqueValues(careers, 'Sub Category');
+
+  app.innerHTML = `
+    <div class="page-header section-header">
+      <div>
+        <h1 class="page-title">Career Growth</h1>
+        <div class="page-description">
+          ${careers.length} record${careers.length === 1 ? '' : 's'}
+        </div>
+      </div>
+    </div>
+
+    <div class="product-toolbar">
+      <div class="product-search">
+        <span class="search-icon">🔍</span>
+        <input id="careerSearch" class="search-box" type="text"
+          placeholder="Search career goals..." autocomplete="off">
+      </div>
+
+      <select id="careerCategoryFilter" class="filter-select">
+        <option value="">All Categories</option>
+        ${categories.map(value => `
+          <option value="${escapeAttribute(value)}">${escapeHtml(value)}</option>
+        `).join('')}
+      </select>
+
+      <select id="careerLevelFilter" class="filter-select">
+        <option value="">All Learning Levels</option>
+        ${levels.map(value => `
+          <option value="${escapeAttribute(value)}">${escapeHtml(value)}</option>
+        `).join('')}
+      </select>
+
+      <select id="careerSubCategoryFilter" class="filter-select">
+        <option value="">All Sub Categories</option>
+        ${subCategories.map(value => `
+          <option value="${escapeAttribute(value)}">${escapeHtml(value)}</option>
+        `).join('')}
+      </select>
+    </div>
+
+    <div id="careerResults" class="products-grid"></div>
+  `;
+
+  setupSortControl(
+    '.product-toolbar',
+    'Goal',
+    'Goal',
+    'careerSearch'
+  );
+
+  window.careerGrowthData = careers;
+  renderCareerGrowthCards(careers);
+  setupCareerGrowthFilters();
+}
+
+function renderCareerGrowthCards(careers) {
+  careers = sortRecords(careers, 'Goal');
+
+  const container = document.getElementById('careerResults');
+  if (!container) return;
+
+  if (!careers.length) {
+    container.innerHTML = `
+      <div class="empty-state product-empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">No career goals found</div>
+        <div>Try changing your search or filters.</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = careers.map(career => {
+    const id = career['Career ID'] || '';
+    const goal = career['Goal'] || 'Career Goal';
+    const category = career['Category'] || '';
+    const subCategory = career['Sub Category'] || '';
+    const level = career['Learning Level'] || '';
+    const why = career['Why It Matters'] || '';
+    const progress = career['Measure of Progress'] || '';
+    const status = career['Status'] || 'Active';
+
+    return `
+      <div class="product-card">
+        <div class="product-card-top">
+          <div class="product-icon">🚀</div>
+          <div class="product-status">${escapeHtml(status)}</div>
+        </div>
+
+        <div class="product-id">${escapeHtml(id)}</div>
+        <div class="product-name">${escapeHtml(goal)}</div>
+
+        <div class="product-category">
+          ${escapeHtml(category)}
+          ${subCategory ? ' • ' + escapeHtml(subCategory) : ''}
+        </div>
+
+        <div class="product-info-list">
+          ${level ? `
+            <div><span>Learning Level</span><b>${escapeHtml(level)}</b></div>
+          ` : ''}
+          ${progress ? `
+            <div><span>Progress Measure</span><b>${escapeHtml(progress)}</b></div>
+          ` : ''}
+        </div>
+
+        ${why ? `
+          <div class="product-features">${escapeHtml(why)}</div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function setupCareerGrowthFilters() {
+  const search = document.getElementById('careerSearch');
+  const category = document.getElementById('careerCategoryFilter');
+  const level = document.getElementById('careerLevelFilter');
+  const subCategory = document.getElementById('careerSubCategoryFilter');
+
+  function applyFilters() {
+    const searchText = search.value.trim().toLowerCase();
+    const categoryValue = category.value.toLowerCase();
+    const levelValue = level.value.toLowerCase();
+    const subCategoryValue = subCategory.value.toLowerCase();
+
+    const filtered = window.careerGrowthData.filter(career => {
+      const searchable = Object.values(career).join(' ').toLowerCase();
+
+      return (
+        (!searchText || searchable.includes(searchText)) &&
+        (!categoryValue || String(career['Category'] || '').toLowerCase() === categoryValue) &&
+        (!levelValue || String(career['Learning Level'] || '').toLowerCase() === levelValue) &&
+        (!subCategoryValue || String(career['Sub Category'] || '').toLowerCase() === subCategoryValue)
+      );
+    });
+
+    renderCareerGrowthCards(filtered);
+  }
+
+  search.addEventListener('input', applyFilters);
+  category.addEventListener('change', applyFilters);
+  level.addEventListener('change', applyFilters);
+  subCategory.addEventListener('change', applyFilters);
+}
+
+/* =========================================================
+   DOCUMENTS PAGE
+========================================================= */
+
+function renderDocumentsPage(documents) {
+
+  const app =
+    document.getElementById('app');
+
+  const types =
+    getUniqueValues(
+      documents,
+      'Document Type'
+    );
+
+  const categories =
+    getUniqueValues(
+      documents,
+      'Category'
+    );
+
+  app.innerHTML = `
+
+    <div class="page-header section-header">
+
+      <div>
+
+        <h1 class="page-title">
+          Documents
+        </h1>
+
+        <div class="page-description">
+          ${documents.length}
+          document${documents.length === 1 ? '' : 's'}
+        </div>
+
+      </div>
+
+      <button
+        class="primary-button"
+        onclick="openAddDocumentModal()"
+      >
+        + Add Document
+      </button>
+
+    </div>
+
+
+    <div class="document-toolbar">
+
+      <div class="document-search">
+
+        <span class="search-icon">
+          🔍
+        </span>
+
+        <input
+          id="documentSearch"
+          class="search-box"
+          type="text"
+          placeholder="Search documents..."
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <select
+        id="documentTypeFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Document Types
+        </option>
+
+        ${types.map(function(value) {
+
+          return `
+            <option value="${escapeAttribute(value)}">
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+
+      <select
+        id="documentCategoryFilter"
+        class="filter-select"
+      >
+
+        <option value="">
+          All Categories
+        </option>
+
+        ${categories.map(function(value) {
+
+          return `
+            <option value="${escapeAttribute(value)}">
+              ${escapeHtml(value)}
+            </option>
+          `;
+
+        }).join('')}
+
+      </select>
+
+    </div>
+
+
+    <div
+      id="documentResults"
+      class="document-grid"
+    ></div>
+
+  `;
+
+
+  setupSortControl(
+    '.document-toolbar',
+    'Document Name',
+    'Document Name',
+    'documentSearch'
+  );
+
+  window.documentsData =
+    documents;
+
+
+  renderDocumentCards(documents);
+
+  setupDocumentFilters();
+
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+function setupDocumentFilters() {
+
+  const search =
+    document.getElementById(
+      'documentSearch'
+    );
+
+  const type =
+    document.getElementById(
+      'documentTypeFilter'
+    );
+
+  const category =
+    document.getElementById(
+      'documentCategoryFilter'
+    );
+
+
+  function applyFilters() {
+
+    const searchText =
+      search.value
+        .trim()
+        .toLowerCase();
+
+    const typeValue =
+      type.value
+        .trim()
+        .toLowerCase();
+
+    const categoryValue =
+      category.value
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+      window.documentsData.filter(
+        function(item) {
+
+          const searchable =
+            Object.values(item)
+              .join(' ')
+              .toLowerCase();
+
+          return (
+
+            (!searchText ||
+              searchable.includes(
+                searchText
+              ))
+
+            &&
+
+            (!typeValue ||
+              String(
+                item['Document Type'] || ''
+              )
+                .toLowerCase() ===
+                typeValue)
+
+            &&
+
+            (!categoryValue ||
+              String(
+                item['Category'] || ''
+              )
+                .toLowerCase() ===
+                categoryValue)
+
+          );
+
+        }
+      );
+
+
+    renderDocumentCards(filtered);
+
+  }
+
+
+  search.addEventListener(
+    'input',
+    applyFilters
+  );
+
+  type.addEventListener(
+    'change',
+    applyFilters
+  );
+
+  category.addEventListener(
+    'change',
+    applyFilters
+  );
+
+}
+
+
+/* =========================================================
+   CARDS
+========================================================= */
+
+function renderDocumentCards(documents) {
+
+  documents =
+    sortRecords(documents, 'Document Name');
+
+  const container =
+    document.getElementById(
+      'documentResults'
+    );
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!documents.length) {
+
+    container.innerHTML = `
+
+      <div class="empty-state">
+
+        <div class="empty-icon">
+          📄
+        </div>
+
+        <div class="empty-title">
+          No documents found
+        </div>
+
+        <div>
+          Try changing your search or filters.
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    documents.map(function(item) {
+
+      return createDocumentCard(item);
+
+    }).join('');
+
+}
+
+
+/* =========================================================
+   DOCUMENT CARD
+========================================================= */
+
+function createDocumentCard(item) {
+
+  const id =
+    item['Document ID'] || '';
+
+  const name =
+    item['Document Name'] ||
+    'Unnamed Document';
+
+  const type =
+    item['Document Type'] || '';
+
+  const category =
+    item['Category'] || '';
+
+  const products =
+    item['Related Products'] || '';
+
+  const industries =
+    item['Related Industries'] || '';
+
+  const description =
+    item['Description'] || '';
+
+  const level =
+    item['Learning Level'] || '';
+
+
+  return `
+
+    <div class="document-card">
+
+
+      <div class="document-card-top">
+
+        <div class="document-icon">
+          📄
+        </div>
+
+
+        <div class="document-status">
+          ${escapeHtml(
+            item['Status'] || 'Active'
+          )}
+        </div>
+
+      </div>
+
+
+      <div class="document-id">
+        ${escapeHtml(id)}
+      </div>
+
+
+      <div class="document-name">
+        ${escapeHtml(name)}
+      </div>
+
+
+      ${
+        type || category
+          ? `
+            <div class="document-category">
+              ${escapeHtml(type)}
+              ${
+                type && category
+                  ? ' • '
+                  : ''
+              }
+              ${escapeHtml(category)}
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="document-info-list">
+
+
+        ${
+          products
+            ? `
+              <div>
+
+                <span>
+                  Products
+                </span>
+
+                <b>
+                  ${escapeHtml(products)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          industries
+            ? `
+              <div>
+
+                <span>
+                  Industries
+                </span>
+
+                <b>
+                  ${escapeHtml(industries)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${
+          level
+            ? `
+              <div>
+
+                <span>
+                  Level
+                </span>
+
+                <b>
+                  ${escapeHtml(level)}
+                </b>
+
+              </div>
+            `
+            : ''
+        }
+
+
+      </div>
+
+
+      ${
+        description
+          ? `
+            <div class="document-description">
+              ${escapeHtml(description)}
+            </div>
+          `
+          : ''
+      }
+
+
+      <div class="document-card-footer">
+
+        <button
+          class="view-product-button"
+          onclick="viewDocument(
+            '${escapeAttribute(id)}'
+          )"
+        >
+          View Details →
+        </button>
+
+      </div>
+
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   VIEW DOCUMENT
+========================================================= */
+
+function viewDocument(documentId) {
+
+  const item =
+    (window.documentsData || [])
+      .find(function(row) {
+
+        return String(
+          row['Document ID'] || ''
+        ) ===
+        String(documentId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Document not found.'
+    );
+
+    return;
+
+  }
+
+
+  openDocumentDetails(item);
+
+}
+
+
+/* =========================================================
+   DETAILS
+========================================================= */
+
+function openDocumentDetails(item) {
+
+  const old =
+    document.getElementById(
+      'documentDetailsModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'documentDetailsModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  const id =
+    item['Document ID'] || '';
+
+  const name =
+    item['Document Name'] ||
+    'Document Details';
+
+
+  modal.innerHTML = `
+
+    <div class="modal document-details-modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            ${escapeHtml(name)}
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(id)}
+          </div>
+
+        </div>
+
+
+        <div class="document-detail-actions">
+
+          <button
+            class="edit-product-button"
+            onclick="editDocument(
+              '${escapeAttribute(id)}'
+            )"
+          >
+            ✏️ Edit
+          </button>
+
+
+          <button
+            class="delete-product-button"
+            onclick="confirmDeleteDocument(
+              '${escapeAttribute(id)}'
+            )"
+          >
+            🗑️ Delete
+          </button>
+
+
+          <button
+            class="modal-close"
+            onclick="closeDocumentDetails()"
+          >
+            ×
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="document-details-body">
+
+
+        ${createDocumentDetailSection(
+          '📄 Document Information',
+          [
+            ['Document ID', item['Document ID']],
+            ['Document Name', item['Document Name']],
+            ['Document Type', item['Document Type']],
+            ['Category', item['Category']],
+            ['Learning Level', item['Learning Level']],
+            ['Status', item['Status']]
+          ]
+        )}
+
+
+        ${createDocumentDetailText(
+          '📝 Description',
+          item['Description']
+        )}
+
+
+        ${createDocumentDetailSection(
+          '🔗 Related Information',
+          [
+            ['Related Products', item['Related Products']],
+            ['Related Industries', item['Related Industries']],
+            ['Source', item['Source']]
+          ]
+        )}
+
+
+        ${
+          item['Document Link']
+            ? `
+              <div class="detail-section">
+
+                <div class="detail-section-title">
+                  🔗 Document Link
+                </div>
+
+                <div class="document-link-box">
+
+                  <a
+                    href="${escapeAttribute(
+                      item['Document Link']
+                    )}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open Document →
+                  </a>
+
+                </div>
+
+              </div>
+            `
+            : ''
+        }
+
+
+        ${createDocumentDetailSection(
+          '🕒 Record Information',
+          [
+            ['Status', item['Status']],
+            ['Last Updated', item['Last Updated']]
+          ]
+        )}
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   DETAIL HELPERS
+========================================================= */
+
+function createDocumentDetailSection(
+  title,
+  fields
+) {
+
+  const valid =
+    fields.filter(function(field) {
+
+      return String(
+        field[1] || ''
+      ).trim() !== '';
+
+    });
+
+
+  if (!valid.length) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+
+      <div class="detail-grid">
+
+        ${valid.map(function(field) {
+
+          return `
+
+            <div class="detail-item">
+
+              <div class="detail-label">
+                ${escapeHtml(field[0])}
+              </div>
+
+              <div class="detail-value">
+                ${formatCell(field[1])}
+              </div>
+
+            </div>
+
+          `;
+
+        }).join('')}
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+function createDocumentDetailText(
+  title,
+  value
+) {
+
+  if (
+    !value ||
+    String(value).trim() === ''
+  ) {
+    return '';
+  }
+
+
+  return `
+
+    <div class="detail-section">
+
+      <div class="detail-section-title">
+        ${escapeHtml(title)}
+      </div>
+
+      <div class="detail-text">
+        ${formatCell(value)}
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+function closeDocumentDetails() {
+
+  const modal =
+    document.getElementById(
+      'documentDetailsModal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   ADD DOCUMENT
+========================================================= */
+
+function openAddDocumentModal() {
+
+  const old =
+    document.getElementById(
+      'documentModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'documentModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Add Document
+          </div>
+
+          <div class="modal-subtitle">
+            Add a new document
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeDocumentModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="addDocumentForm"
+        onsubmit="submitDocument(event)"
+      >
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+            <span>📄</span>
+            Document Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Document Name *
+            </label>
+
+            <input
+              type="text"
+              name="documentName"
+              required
+              placeholder="e.g. LV Cable Catalogue"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Document Type
+            </label>
+
+            <input
+              type="text"
+              name="documentType"
+              placeholder="Catalogue / Guide / Datasheet"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Category
+            </label>
+
+            <input
+              type="text"
+              name="category"
+              placeholder="Products / Sales / Technical"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Learning Level
+            </label>
+
+            <select name="learningLevel">
+
+              <option value="Beginner">
+                Beginner
+              </option>
+
+              <option value="Intermediate">
+                Intermediate
+              </option>
+
+              <option value="Advanced">
+                Advanced
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🔗</span>
+            Related Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              placeholder="LV Cables; Control Cables..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Industries
+            </label>
+
+            <input
+              type="text"
+              name="relatedIndustries"
+              placeholder="Power; Oil & Gas..."
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Description
+            </label>
+
+            <textarea
+              name="description"
+              rows="4"
+              placeholder="Describe the document..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🌐</span>
+            Document Source
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Document Link
+            </label>
+
+            <input
+              type="url"
+              name="documentLink"
+              placeholder="https://..."
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Source
+            </label>
+
+            <input
+              type="text"
+              name="source"
+              placeholder="Company Catalogue / Personal Notes"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option value="Active">
+                Active
+              </option>
+
+              <option value="Inactive">
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeDocumentModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="saveDocumentButton"
+          >
+            Save Document
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   CLOSE ADD / EDIT
+========================================================= */
+
+function closeDocumentModal() {
+
+  const modal =
+    document.getElementById(
+      'documentModal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT ADD
+========================================================= */
+
+function submitDocument(event) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'addDocumentForm'
+    );
+
+  const button =
+    document.getElementById(
+      'saveDocumentButton'
+    );
+
+
+  const documentData = {
+
+    documentName:
+      form.documentName.value,
+
+    documentType:
+      form.documentType.value,
+
+    category:
+      form.category.value,
+
+    relatedProducts:
+      form.relatedProducts.value,
+
+    relatedIndustries:
+      form.relatedIndustries.value,
+
+    description:
+      form.description.value,
+
+    documentLink:
+      form.documentLink.value,
+
+    source:
+      form.source.value,
+
+    learningLevel:
+      form.learningLevel.value,
+
+    status:
+      form.status.value
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeDocumentModal();
+
+      showSuccessMessage(
+        'Document ' +
+        result.documentId +
+        ' added successfully.'
+      );
+
+      loadSection(
+        'Documents',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Document';
+
+      alert(
+        error.message ||
+        'Unable to save document.'
+      );
+
+    })
+
+    .addDocument(
+      documentData
+    );
+
+}
+
+
+/* =========================================================
+   EDIT DOCUMENT
+========================================================= */
+
+function editDocument(documentId) {
+
+  const item =
+    (window.documentsData || [])
+      .find(function(row) {
+
+        return String(
+          row['Document ID'] || ''
+        ) ===
+        String(documentId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Document not found.'
+    );
+
+    return;
+
+  }
+
+
+  window.editingDocumentId =
+    item['Document ID'];
+
+
+  closeDocumentDetails();
+
+  openEditDocumentModal(item);
+
+}
+
+
+/* =========================================================
+   EDIT MODAL
+========================================================= */
+
+function openEditDocumentModal(item) {
+
+  const old =
+    document.getElementById(
+      'documentModal'
+    );
+
+  if (old) {
+    old.remove();
+  }
+
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'documentModal';
+
+  modal.className =
+    'modal-overlay';
+
+
+  modal.innerHTML = `
+
+    <div class="modal">
+
+
+      <div class="modal-header">
+
+        <div>
+
+          <div class="modal-title">
+            Edit Document
+          </div>
+
+          <div class="modal-subtitle">
+            ${escapeHtml(
+              item['Document ID'] || ''
+            )}
+          </div>
+
+        </div>
+
+
+        <button
+          class="modal-close"
+          onclick="closeDocumentModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form
+        id="editDocumentForm"
+        onsubmit="submitDocumentEdit(event)"
+      >
+
+        <div class="form-grid">
+
+
+          <div class="form-section-title full">
+            <span>📄</span>
+            Document Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Document Name *
+            </label>
+
+            <input
+              type="text"
+              name="documentName"
+              required
+              value="${escapeAttribute(
+                item['Document Name'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Document Type
+            </label>
+
+            <input
+              type="text"
+              name="documentType"
+              value="${escapeAttribute(
+                item['Document Type'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Category
+            </label>
+
+            <input
+              type="text"
+              name="category"
+              value="${escapeAttribute(
+                item['Category'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Learning Level
+            </label>
+
+            <select name="learningLevel">
+
+              <option
+                value="Beginner"
+                ${item['Learning Level'] === 'Beginner'
+                  ? 'selected'
+                  : ''}
+              >
+                Beginner
+              </option>
+
+              <option
+                value="Intermediate"
+                ${item['Learning Level'] === 'Intermediate'
+                  ? 'selected'
+                  : ''}
+              >
+                Intermediate
+              </option>
+
+              <option
+                value="Advanced"
+                ${item['Learning Level'] === 'Advanced'
+                  ? 'selected'
+                  : ''}
+              >
+                Advanced
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🔗</span>
+            Related Information
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Products
+            </label>
+
+            <input
+              type="text"
+              name="relatedProducts"
+              value="${escapeAttribute(
+                item['Related Products'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Related Industries
+            </label>
+
+            <input
+              type="text"
+              name="relatedIndustries"
+              value="${escapeAttribute(
+                item['Related Industries'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Description
+            </label>
+
+            <textarea
+              name="description"
+              rows="4"
+            >${escapeHtml(
+              item['Description'] || ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="form-section-title full">
+            <span>🌐</span>
+            Document Source
+          </div>
+
+
+          <div class="form-group full">
+
+            <label>
+              Document Link
+            </label>
+
+            <input
+              type="url"
+              name="documentLink"
+              value="${escapeAttribute(
+                item['Document Link'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Source
+            </label>
+
+            <input
+              type="text"
+              name="source"
+              value="${escapeAttribute(
+                item['Source'] || ''
+              )}"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Status
+            </label>
+
+            <select name="status">
+
+              <option
+                value="Active"
+                ${item['Status'] === 'Active'
+                  ? 'selected'
+                  : ''}
+              >
+                Active
+              </option>
+
+              <option
+                value="Inactive"
+                ${item['Status'] === 'Inactive'
+                  ? 'selected'
+                  : ''}
+              >
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="modal-footer">
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="closeDocumentModal()"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+            id="updateDocumentButton"
+          >
+            Save Changes
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(modal);
+
+}
+
+
+/* =========================================================
+   SUBMIT EDIT
+========================================================= */
+
+function submitDocumentEdit(event) {
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      'editDocumentForm'
+    );
+
+  const button =
+    document.getElementById(
+      'updateDocumentButton'
+    );
+
+  const documentId =
+    window.editingDocumentId;
+
+
+  if (!documentId) {
+
+    alert(
+      'Document ID not found.'
+    );
+
+    return;
+
+  }
+
+
+  const documentData = {
+
+    documentName:
+      form.documentName.value,
+
+    documentType:
+      form.documentType.value,
+
+    category:
+      form.category.value,
+
+    relatedProducts:
+      form.relatedProducts.value,
+
+    relatedIndustries:
+      form.relatedIndustries.value,
+
+    description:
+      form.description.value,
+
+    documentLink:
+      form.documentLink.value,
+
+    source:
+      form.source.value,
+
+    learningLevel:
+      form.learningLevel.value,
+
+    status:
+      form.status.value
+
+  };
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(function() {
+
+      window.editingDocumentId =
+        null;
+
+      closeDocumentModal();
+
+      showSuccessMessage(
+        'Document updated successfully.'
+      );
+
+      loadSection(
+        'Documents',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      button.disabled = false;
+
+      button.textContent =
+        'Save Changes';
+
+      alert(
+        error.message ||
+        'Unable to update document.'
+      );
+
+    })
+
+    .updateDocument(
+      documentId,
+      documentData
+    );
+
+}
+
+
+/* =========================================================
+   DELETE DOCUMENT
+========================================================= */
+
+function confirmDeleteDocument(documentId) {
+
+  const item =
+    (window.documentsData || [])
+      .find(function(row) {
+
+        return String(
+          row['Document ID'] || ''
+        ) ===
+        String(documentId);
+
+      });
+
+
+  if (!item) {
+
+    alert(
+      'Document not found.'
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    confirm(
+      'Delete this document?\n\n' +
+      (
+        item['Document Name'] || ''
+      ) +
+      '\n' +
+      documentId +
+      '\n\n' +
+      'This will permanently remove it from the Documents sheet.'
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(function(result) {
+
+      closeDocumentDetails();
+
+      showSuccessMessage(
+        'Document ' +
+        result.documentId +
+        ' deleted successfully.'
+      );
+
+      loadSection(
+        'Documents',
+        true
+      );
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      alert(
+        error.message ||
+        'Unable to delete document.'
+      );
+
+    })
+
+    .deleteDocument(
+      documentId
     );
 
 }

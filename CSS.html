@@ -2920,4 +2920,2067 @@ body {
 
 }
 
+/* =========================================================
+   CABLE KNOWLEDGE TOOLBAR
+========================================================= */
+
+.knowledge-toolbar {
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(260px, 1fr)
+    220px
+    180px;
+
+  gap: 10px;
+
+  margin-bottom: 22px;
+
+}
+
+
+/* =========================================================
+   KNOWLEDGE GRID
+========================================================= */
+
+.knowledge-grid {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 16px;
+
+}
+
+
+/* =========================================================
+   KNOWLEDGE CARD
+========================================================= */
+
+.knowledge-card {
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 13px;
+
+  padding: 18px;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+
+}
+
+
+.knowledge-card:hover {
+
+  transform:
+    translateY(-2px);
+
+  border-color:
+    #d1d5db;
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, 0.06);
+
+}
+
+
+/* =========================================================
+   TOP
+========================================================= */
+
+.knowledge-card-top {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  margin-bottom: 9px;
+
+}
+
+
+.knowledge-icon {
+
+  width: 42px;
+
+  height: 42px;
+
+  border-radius: 10px;
+
+  background: #ecfdf5;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 21px;
+
+}
+
+
+.knowledge-level {
+
+  font-size: 11px;
+
+  padding:
+    5px 9px;
+
+  border-radius: 20px;
+
+  background: #ecfdf5;
+
+  color: #047857;
+
+  font-weight: 600;
+
+}
+
+
+/* =========================================================
+   ID / TOPIC
+========================================================= */
+
+.knowledge-id {
+
+  font-size: 11px;
+
+  color: #9ca3af;
+
+  margin-bottom: 3px;
+
+}
+
+
+.knowledge-topic {
+
+  font-size: 17px;
+
+  font-weight: 700;
+
+  line-height: 22px;
+
+  color: #111827;
+
+  margin-bottom: 3px;
+
+}
+
+
+.knowledge-category {
+
+  font-size: 12px;
+
+  color: #6b7280;
+
+  margin-bottom: 14px;
+
+}
+
+
+/* =========================================================
+   INFO
+========================================================= */
+
+.knowledge-info-list {
+
+  border-top:
+    1px solid #f1f5f9;
+
+  border-bottom:
+    1px solid #f1f5f9;
+
+  padding:
+    10px 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 9px;
+
+}
+
+
+.knowledge-info-list div {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    flex-start;
+
+  gap: 12px;
+
+  font-size: 12px;
+
+}
+
+
+.knowledge-info-list span {
+
+  color: #9ca3af;
+
+  flex-shrink: 0;
+
+}
+
+
+.knowledge-info-list b {
+
+  color: #374151;
+
+  text-align: right;
+
+  font-weight: 600;
+
+  line-height: 17px;
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  line-clamp: 2;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+/* =========================================================
+   ANSWER
+========================================================= */
+
+.knowledge-answer {
+
+  margin-top: 12px;
+
+  font-size: 12px;
+
+  color: #4b5563;
+
+  line-height: 18px;
+
+}
+
+
+.knowledge-answer span {
+
+  display: block;
+
+  font-size: 10px;
+
+  color: #9ca3af;
+
+  text-transform:
+    uppercase;
+
+  margin-bottom: 3px;
+
+}
+
+
+.knowledge-answer div {
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 3;
+
+  line-clamp: 3;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.knowledge-card-footer {
+
+  display: flex;
+
+  justify-content:
+    flex-end;
+
+  margin-top: auto;
+
+  padding-top: 16px;
+
+}
+
+
+/* =========================================================
+   DETAILS
+========================================================= */
+
+.knowledge-details-modal {
+
+  max-width: 900px;
+
+}
+
+
+.knowledge-details-body {
+
+  padding: 22px;
+
+  overflow-y: auto;
+
+}
+
+
+.knowledge-detail-actions {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .knowledge-grid {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+
+  .knowledge-toolbar {
+
+    grid-template-columns:
+      minmax(200px, 1fr)
+      1fr;
+
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .knowledge-toolbar {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+
+  }
+
+
+  .knowledge-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .knowledge-card {
+
+    padding: 16px;
+
+  }
+
+
+  .knowledge-details-body {
+
+    padding: 17px;
+
+  }
+
+
+  .knowledge-detail-actions {
+
+    gap: 4px;
+
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .knowledge-detail-actions
+  .edit-product-button,
+  .knowledge-detail-actions
+  .delete-product-button {
+
+    padding:
+      6px 7px;
+
+    font-size: 10px;
+
+  }
+
+}
+
+/* =========================================================
+   LEARNING TOOLBAR
+========================================================= */
+
+.learning-toolbar {
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(260px, 1fr)
+    220px
+    180px;
+
+  gap: 10px;
+
+  margin-bottom: 22px;
+
+}
+
+
+/* =========================================================
+   LEARNING GRID
+========================================================= */
+
+.learning-grid {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 16px;
+
+}
+
+
+/* =========================================================
+   LEARNING CARD
+========================================================= */
+
+.learning-card {
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 13px;
+
+  padding: 18px;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+
+}
+
+
+.learning-card:hover {
+
+  transform:
+    translateY(-2px);
+
+  border-color:
+    #d1d5db;
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, 0.06);
+
+}
+
+
+/* =========================================================
+   TOP
+========================================================= */
+
+.learning-card-top {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    center;
+
+  margin-bottom: 9px;
+
+}
+
+
+.learning-icon {
+
+  width: 42px;
+
+  height: 42px;
+
+  border-radius: 10px;
+
+  background: #ecfdf5;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 21px;
+
+}
+
+
+.learning-level {
+
+  font-size: 11px;
+
+  padding:
+    5px 9px;
+
+  border-radius: 20px;
+
+  background: #ecfdf5;
+
+  color: #047857;
+
+  font-weight: 600;
+
+}
+
+
+/* =========================================================
+   ID / TOPIC
+========================================================= */
+
+.learning-id {
+
+  font-size: 11px;
+
+  color: #9ca3af;
+
+  margin-bottom: 3px;
+
+}
+
+
+.learning-topic {
+
+  font-size: 17px;
+
+  font-weight: 700;
+
+  line-height: 22px;
+
+  color: #111827;
+
+  margin-bottom: 3px;
+
+}
+
+
+.learning-category {
+
+  font-size: 12px;
+
+  color: #6b7280;
+
+  margin-bottom: 14px;
+
+}
+
+
+/* =========================================================
+   INFO
+========================================================= */
+
+.learning-info-list {
+
+  border-top:
+    1px solid #f1f5f9;
+
+  border-bottom:
+    1px solid #f1f5f9;
+
+  padding:
+    10px 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 9px;
+
+}
+
+
+.learning-info-list div {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    flex-start;
+
+  gap: 12px;
+
+  font-size: 12px;
+
+}
+
+
+.learning-info-list span {
+
+  color: #9ca3af;
+
+  flex-shrink: 0;
+
+}
+
+
+.learning-info-list b {
+
+  color: #374151;
+
+  text-align: right;
+
+  font-weight: 600;
+
+  line-height: 17px;
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  line-clamp: 2;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+/* =========================================================
+   WHY IT MATTERS
+========================================================= */
+
+.learning-why {
+
+  margin-top: 12px;
+
+  font-size: 12px;
+
+  color: #4b5563;
+
+  line-height: 18px;
+
+}
+
+
+.learning-why span {
+
+  display: block;
+
+  font-size: 10px;
+
+  color: #9ca3af;
+
+  text-transform:
+    uppercase;
+
+  margin-bottom: 3px;
+
+}
+
+
+.learning-why div {
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 3;
+
+  line-clamp: 3;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+/* =========================================================
+   SALES APPLICATION
+========================================================= */
+
+.learning-sales {
+
+  margin-top: 10px;
+
+  font-size: 12px;
+
+  color: #374151;
+
+  line-height: 18px;
+
+}
+
+
+.learning-sales span {
+
+  display: block;
+
+  font-size: 10px;
+
+  color: #9ca3af;
+
+  text-transform:
+    uppercase;
+
+  margin-bottom: 3px;
+
+}
+
+
+.learning-sales div {
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  line-clamp: 2;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.learning-card-footer {
+
+  display: flex;
+
+  justify-content:
+    flex-end;
+
+  margin-top: auto;
+
+  padding-top: 16px;
+
+}
+
+
+/* =========================================================
+   DETAILS
+========================================================= */
+
+.learning-details-modal {
+
+  max-width: 900px;
+
+}
+
+
+.learning-details-body {
+
+  padding: 22px;
+
+  overflow-y: auto;
+
+}
+
+
+.learning-detail-actions {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+}
+
+
+/* =========================================================
+   EDIT FORM FIX
+========================================================= */
+
+#editLearningForm {
+
+  padding: 20px;
+
+  box-sizing: border-box;
+
+}
+
+
+#editLearningForm .form-grid {
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editLearningForm .form-group {
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+}
+
+
+#editLearningForm input,
+#editLearningForm textarea,
+#editLearningForm select {
+
+  width: 100%;
+
+  max-width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editLearningForm .form-section-title {
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editLearningForm .modal-footer {
+
+  margin-left: -20px;
+
+  margin-right: -20px;
+
+  padding-left: 20px;
+
+  padding-right: 20px;
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .learning-grid {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+
+  .learning-toolbar {
+
+    grid-template-columns:
+      minmax(200px, 1fr)
+      1fr;
+
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .learning-toolbar {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+
+  }
+
+
+  .learning-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .learning-card {
+
+    padding: 16px;
+
+  }
+
+
+  .learning-details-body {
+
+    padding: 17px;
+
+  }
+
+
+  .learning-detail-actions {
+
+    gap: 4px;
+
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .learning-detail-actions
+  .edit-product-button,
+  .learning-detail-actions
+  .delete-product-button {
+
+    padding:
+      6px 7px;
+
+    font-size: 10px;
+
+  }
+
+}
+
+/* =========================================================
+   CAREER GROWTH
+========================================================= */
+
+.career-toolbar {
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(260px, 1fr)
+    220px
+    180px;
+
+  gap: 10px;
+
+  margin-bottom: 22px;
+
+}
+
+
+.career-grid {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 16px;
+
+}
+
+
+.career-card {
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 13px;
+
+  padding: 18px;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+
+}
+
+
+.career-card:hover {
+
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, 0.06);
+
+}
+
+
+.career-card-top {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  margin-bottom: 9px;
+
+}
+
+
+.career-icon {
+
+  width: 42px;
+
+  height: 42px;
+
+  border-radius: 10px;
+
+  background: #ecfdf5;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 21px;
+
+}
+
+
+.career-level {
+
+  font-size: 11px;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  background: #ecfdf5;
+
+  color: #047857;
+
+  font-weight: 600;
+
+}
+
+
+.career-id {
+
+  font-size: 11px;
+
+  color: #9ca3af;
+
+  margin-bottom: 3px;
+
+}
+
+
+.career-topic {
+
+  font-size: 17px;
+
+  font-weight: 700;
+
+  line-height: 22px;
+
+  color: #111827;
+
+  margin-bottom: 3px;
+
+}
+
+
+.career-category {
+
+  font-size: 12px;
+
+  color: #6b7280;
+
+  margin-bottom: 14px;
+
+}
+
+
+.career-info-list {
+
+  border-top:
+    1px solid #f1f5f9;
+
+  border-bottom:
+    1px solid #f1f5f9;
+
+  padding: 10px 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 9px;
+
+}
+
+
+.career-info-list div {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    flex-start;
+
+  gap: 12px;
+
+  font-size: 12px;
+
+}
+
+
+.career-info-list span {
+
+  color: #9ca3af;
+
+  flex-shrink: 0;
+
+}
+
+
+.career-info-list b {
+
+  color: #374151;
+
+  text-align: right;
+
+  font-weight: 600;
+
+  line-height: 17px;
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  line-clamp: 2;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+.career-progress {
+
+  margin-top: 12px;
+
+  font-size: 12px;
+
+  color: #4b5563;
+
+  line-height: 18px;
+
+}
+
+
+.career-progress span,
+.career-sales span {
+
+  display: block;
+
+  font-size: 10px;
+
+  color: #9ca3af;
+
+  margin-bottom: 3px;
+
+}
+
+
+.career-progress div {
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 3;
+
+  line-clamp: 3;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+.career-sales {
+
+  margin-top: 10px;
+
+  font-size: 12px;
+
+  color: #374151;
+
+  line-height: 18px;
+
+}
+
+
+.career-sales div {
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  line-clamp: 2;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+.career-card-footer {
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  margin-top: auto;
+
+  padding-top: 16px;
+
+}
+
+
+.career-details-modal {
+
+  max-width: 900px;
+
+}
+
+
+.career-details-body {
+
+  padding: 22px;
+
+  overflow-y: auto;
+
+}
+
+
+.career-detail-actions {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+}
+
+
+/* =========================================================
+   EDIT FORM
+========================================================= */
+
+#editCareerForm {
+
+  padding: 20px;
+
+  box-sizing: border-box;
+
+}
+
+
+#editCareerForm .form-grid {
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editCareerForm .form-group {
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+}
+
+
+#editCareerForm input,
+#editCareerForm textarea,
+#editCareerForm select {
+
+  width: 100%;
+
+  max-width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editCareerForm .form-section-title {
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editCareerForm .modal-footer {
+
+  margin-left: -20px;
+
+  margin-right: -20px;
+
+  padding-left: 20px;
+
+  padding-right: 20px;
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .career-grid {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+  .career-toolbar {
+
+    grid-template-columns:
+      minmax(200px, 1fr)
+      1fr;
+
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .career-toolbar {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+
+  }
+
+
+  .career-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .career-card {
+
+    padding: 16px;
+
+  }
+
+
+  .career-details-body {
+
+    padding: 17px;
+
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .career-detail-actions
+  .edit-product-button,
+  .career-detail-actions
+  .delete-product-button {
+
+    padding: 6px 7px;
+
+    font-size: 10px;
+
+  }
+
+}
+
+/* =========================================================
+   DOCUMENTS
+========================================================= */
+
+.document-toolbar {
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(260px, 1fr)
+    220px
+    200px;
+
+  gap: 10px;
+
+  margin-bottom: 22px;
+
+}
+
+
+.document-grid {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 16px;
+
+}
+
+
+.document-card {
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 13px;
+
+  padding: 18px;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+
+}
+
+
+.document-card:hover {
+
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, 0.06);
+
+}
+
+
+.document-card-top {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  margin-bottom: 9px;
+
+}
+
+
+.document-icon {
+
+  width: 42px;
+
+  height: 42px;
+
+  border-radius: 10px;
+
+  background: #ecfdf5;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 21px;
+
+}
+
+
+.document-status {
+
+  font-size: 11px;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  background: #ecfdf5;
+
+  color: #047857;
+
+  font-weight: 600;
+
+}
+
+
+.document-id {
+
+  font-size: 11px;
+
+  color: #9ca3af;
+
+  margin-bottom: 3px;
+
+}
+
+
+.document-name {
+
+  font-size: 17px;
+
+  font-weight: 700;
+
+  line-height: 22px;
+
+  color: #111827;
+
+  margin-bottom: 3px;
+
+}
+
+
+.document-category {
+
+  font-size: 12px;
+
+  color: #6b7280;
+
+  margin-bottom: 14px;
+
+}
+
+
+.document-info-list {
+
+  border-top:
+    1px solid #f1f5f9;
+
+  border-bottom:
+    1px solid #f1f5f9;
+
+  padding: 10px 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 9px;
+
+}
+
+
+.document-info-list div {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    flex-start;
+
+  gap: 12px;
+
+  font-size: 12px;
+
+}
+
+
+.document-info-list span {
+
+  color: #9ca3af;
+
+  flex-shrink: 0;
+
+}
+
+
+.document-info-list b {
+
+  color: #374151;
+
+  text-align: right;
+
+  font-weight: 600;
+
+  line-height: 17px;
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  line-clamp: 2;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+.document-description {
+
+  margin-top: 12px;
+
+  font-size: 12px;
+
+  line-height: 18px;
+
+  color: #4b5563;
+
+  display:
+    -webkit-box;
+
+  -webkit-line-clamp: 3;
+
+  line-clamp: 3;
+
+  -webkit-box-orient:
+    vertical;
+
+  overflow: hidden;
+
+}
+
+
+.document-card-footer {
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  margin-top: auto;
+
+  padding-top: 16px;
+
+}
+
+
+.document-details-modal {
+
+  max-width: 900px;
+
+}
+
+
+.document-details-body {
+
+  padding: 22px;
+
+  overflow-y: auto;
+
+}
+
+
+.document-detail-actions {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+}
+
+
+.document-link-box {
+
+  padding: 12px 14px;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 8px;
+
+  background: #f9fafb;
+
+}
+
+
+.document-link-box a {
+
+  color: #087f5b;
+
+  font-weight: 600;
+
+  text-decoration: none;
+
+}
+
+
+.document-link-box a:hover {
+
+  text-decoration: underline;
+
+}
+
+
+/* =========================================================
+   EDIT FORM FIX
+========================================================= */
+
+#editDocumentForm {
+
+  padding: 20px;
+
+  box-sizing: border-box;
+
+}
+
+
+#editDocumentForm .form-grid {
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editDocumentForm .form-group {
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+}
+
+
+#editDocumentForm input,
+#editDocumentForm textarea,
+#editDocumentForm select {
+
+  width: 100%;
+
+  max-width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editDocumentForm .form-section-title {
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+}
+
+
+#editDocumentForm .modal-footer {
+
+  margin-left: -20px;
+
+  margin-right: -20px;
+
+  padding-left: 20px;
+
+  padding-right: 20px;
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .document-grid {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+  }
+
+  .document-toolbar {
+
+    grid-template-columns:
+      minmax(200px, 1fr)
+      1fr;
+
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .document-toolbar {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+
+  }
+
+
+  .document-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .document-card {
+
+    padding: 16px;
+
+  }
+
+
+  .document-details-body {
+
+    padding: 17px;
+
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .document-detail-actions
+  .edit-product-button,
+  .document-detail-actions
+  .delete-product-button {
+
+    padding: 6px 7px;
+
+    font-size: 10px;
+
+  }
+
+}
+
+/* =========================================================
+   SHARED PAGE SORTING
+========================================================= */
+
+.sort-select {
+  min-width: 170px;
+}
+
+
+.product-toolbar {
+  grid-template-columns:
+    minmax(260px, 1fr)
+    repeat(4, 190px);
+}
+
+
+.application-toolbar,
+.industry-toolbar,
+.competitor-toolbar {
+  grid-template-columns:
+    minmax(260px, 1fr)
+    repeat(3, 220px);
+}
+
+
+.knowledge-toolbar,
+.learning-toolbar,
+.career-toolbar {
+  grid-template-columns:
+    minmax(260px, 1fr)
+    repeat(3, 200px);
+}
+
+
+.document-toolbar {
+  grid-template-columns:
+    minmax(260px, 1fr)
+    repeat(3, 200px);
+}
+
+
+@media (max-width: 1100px) {
+
+  .product-toolbar,
+  .application-toolbar,
+  .industry-toolbar,
+  .competitor-toolbar,
+  .knowledge-toolbar,
+  .learning-toolbar,
+  .career-toolbar,
+  .document-toolbar {
+    grid-template-columns:
+      minmax(200px, 1fr)
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .product-toolbar,
+  .application-toolbar,
+  .industry-toolbar,
+  .competitor-toolbar,
+  .knowledge-toolbar,
+  .learning-toolbar,
+  .career-toolbar,
+  .document-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+}
+
+
+/* =========================================================
+   SHARED ADD / EDIT FORM LAYOUT
+   One rule set for every modal form prevents fields, section
+   dividers, and footer actions from overflowing the modal.
+========================================================= */
+
+.modal form {
+  padding: 20px !important;
+  box-sizing: border-box;
+}
+
+
+.modal form .form-grid,
+.modal form .form-group,
+.modal form .form-section-title {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+.modal form input,
+.modal form textarea,
+.modal form select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+
+.modal form .modal-footer {
+  margin: 20px -20px -20px !important;
+  padding: 18px 20px !important;
+  box-sizing: border-box;
+}
+
+
+@media (max-width: 600px) {
+
+  .modal form {
+    padding: 17px !important;
+  }
+
+
+  .modal form .modal-footer {
+    margin: 17px -17px -17px !important;
+    padding: 14px 17px !important;
+  }
+
+}
+
 </style>
